@@ -26,6 +26,7 @@ bytte fritt mellom å være gjest og lokale.
 2. Åpne Terminal (Mac) eller PowerShell (Windows) og kjør:
 
    ```sh
+   npm install -g corepack@latest
    corepack enable
    git clone https://github.com/martibal/lokalanbud.git
    cd lokalanbud
@@ -33,8 +34,9 @@ bytte fritt mellom å være gjest og lokale.
    pnpm dev
    ```
 
-   Svarer `corepack enable` med en feil om rettigheter på Mac, kjør
-   `sudo corepack enable` i stedet.
+   Den første linjen oppdaterer Corepack. Eldre utgaver av Node 22 har en
+   Corepack med utgåtte nøkler, som gir feilen «Cannot find matching keyid».
+   Svarer kommandoene med en feil om rettigheter på Mac, sett `sudo` foran.
 
 3. Åpne <http://localhost:3000/demo> i nettleseren og velg en rolle.
 4. Stopp med Ctrl+C. For å hente siste versjon senere: `git pull` og så
