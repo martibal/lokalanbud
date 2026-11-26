@@ -7,7 +7,15 @@ import { areasLabel, criterionLabel, eventTypeLabel, formatDateRange, formatNok,
 
 export const metadata: Metadata = { title: "Forespørsler" };
 
-type Search = { omrade?: string | string[]; fra?: string; til?: string; minbudsjett?: string; alle?: string; avslatt?: string };
+type Search = {
+  omrade?: string | string[];
+  fra?: string;
+  til?: string;
+  minbudsjett?: string;
+  passer?: string;
+  avslatte?: string;
+  avslatt?: string;
+};
 
 export default async function VenueOverviewPage({ searchParams }: { searchParams: Promise<Search> }) {
   const user = await requireVenueUser();
@@ -22,16 +30,19 @@ export default async function VenueOverviewPage({ searchParams }: { searchParams
   const from = /^\d{4}-\d{2}-\d{2}$/.test(params.fra ?? "") ? params.fra : undefined;
   const to = /^\d{4}-\d{2}-\d{2}$/.test(params.til ?? "") ? params.til : undefined;
   const minBudget = Number.parseInt(params.minbudsjett ?? "", 10);
-  const showAll = params.alle === "1";
+  const onlyFitting = params.passer === "1";
+  const showDeclined = params.avslatte === "1";
 
-  // Uten valgt område vises forespørsler som gjelder lokalets eget område.
-  const areaFilter: Set<AreaId> | null =
-    chosenAreas.size > 0 ? chosenAreas : showAll ? null : new Set<AreaId>([venue.area]);
+  /** Forespørselen gjelder lokalets område, og lokalet har plass til alle. */
+  const fits = (areas: readonly AreaId[], guestCount: number) =>
+    areas.includes(venue.area) && guestCount <= venue.capacity;
 
+  // Alle åpne forespørsler vises, nyeste og mest haster først. Filtrene er valgfrie.
   const rows = openRequestsForVenue(user.id).filter(({ request, declined }) => {
     const { input } = request;
-    if (!showAll && (declined || input.guestCount > venue.capacity)) return false;
-    if (areaFilter && !input.areas.some((a) => areaFilter.has(a))) return false;
+    if (declined && !showDeclined) return false;
+    if (onlyFitting && !fits(input.areas, input.guestCount)) return false;
+    if (chosenAreas.size > 0 && !input.areas.some((a) => chosenAreas.has(a))) return false;
     const date = earliestDate(request);
     if (from && date < from) return false;
     if (to && date > to) return false;
@@ -48,7 +59,10 @@ export default async function VenueOverviewPage({ searchParams }: { searchParams
       </p>
       {params.avslatt && <p className="notice">Registrert. Forespørselen er skjult for dere.</p>}
 
-      <details className="card filters" open={chosenAreas.size > 0 || Boolean(from || to || params.minbudsjett)}>
+      <details
+        className="card filters"
+        open={chosenAreas.size > 0 || onlyFitting || showDeclined || Boolean(from || to || params.minbudsjett)}
+      >
         <summary>Filtrer</summary>
         <form method="get">
           <fieldset>
@@ -61,7 +75,7 @@ export default async function VenueOverviewPage({ searchParams }: { searchParams
                 </label>
               ))}
             </div>
-            <p className="muted small">Uten valg vises forespørsler som gjelder {areasLabel([venue.area])}.</p>
+            <p className="muted small">Uten valg vises forespørsler fra hele Oslo.</p>
           </fieldset>
           <div className="row">
             <div>
@@ -78,8 +92,12 @@ export default async function VenueOverviewPage({ searchParams }: { searchParams
             </div>
           </div>
           <label className="check">
-            <input type="checkbox" name="alle" value="1" defaultChecked={showAll} />
-            Vis også forespørsler som er for store for lokalet eller som dere har avslått
+            <input type="checkbox" name="passer" value="1" defaultChecked={onlyFitting} />
+            Bare forespørsler i {areasLabel([venue.area])} med plass til alle gjestene ({venue.capacity})
+          </label>
+          <label className="check">
+            <input type="checkbox" name="avslatte" value="1" defaultChecked={showDeclined} />
+            Vis også forespørsler dere har svart «Passer ikke» på
           </label>
           <div className="actions-row">
             <button className="button button-primary">Bruk filter</button>
@@ -125,6 +143,7 @@ export default async function VenueOverviewPage({ searchParams }: { searchParams
                 </div>
                 <div className="row-badges">
                   {urgent && <span className="badge urgent">Haster</span>}
+                  {fits(input.areas, input.guestCount) && <span className="badge good">Passer for dere</span>}
                   {ownOffer ? (
                     <span className="badge good">Tilbud sendt</span>
                   ) : declined ? (

@@ -12,9 +12,8 @@ import {
 } from "@lokalbud/core";
 import { useRouter } from "next/navigation";
 import { useId, useMemo, useState, useTransition } from "react";
-import { sendGuestCode } from "@/lib/demo/actions";
 import { toFieldErrors, type FieldErrors } from "@/lib/form-errors";
-import { publishWithCode, submitRequest } from "./actions";
+import { submitRequest } from "./actions";
 
 type DateMode = "exact" | "flexible";
 type CustomRow = { key: number; text: string; importance: Importance };
@@ -31,7 +30,7 @@ function toInt(value: string): number {
   return cleaned === "" ? Number.NaN : Number(cleaned);
 }
 
-export function RequestForm({ today, loggedIn }: { today: string; loggedIn: boolean }) {
+export function RequestForm({ today }: { today: string }) {
   const formId = useId();
   const router = useRouter();
   const [areas, setAreas] = useState<AreaId[]>([]);
@@ -50,14 +49,6 @@ export function RequestForm({ today, loggedIn }: { today: string; loggedIn: bool
   const [attempted, setAttempted] = useState(false);
   const [serverErrors, setServerErrors] = useState<FieldErrors>({});
   const [pending, startTransition] = useTransition();
-
-  // Steg 2: bekreft mobilnummer
-  const [step, setStep] = useState<"form" | "verify">("form");
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [codeSentTo, setCodeSentTo] = useState<string>();
-  const [demoCode, setDemoCode] = useState<string>();
-  const [code, setCode] = useState("");
 
   const allAreasSelected = areas.length === OSLO_AREAS.length;
 
@@ -106,38 +97,10 @@ export function RequestForm({ today, loggedIn }: { today: string; loggedIn: bool
     }
     startTransition(async () => {
       const response = await submitRequest(input);
-      if (response.ok === true) router.push(`/mine/${response.requestId}?ny=1`);
-      else if (response.ok === "needs_verification") {
-        setStep("verify");
-        window.scrollTo({ top: 0 });
-      } else {
+      if (response.ok) router.push(`/mine/${response.requestId}?ny=1`);
+      else {
         setServerErrors(response.errors);
         focusFirstError();
-      }
-    });
-  }
-
-  function onSendCode(event: React.FormEvent) {
-    event.preventDefault();
-    setServerErrors({});
-    if (name.trim().length < 2) return setServerErrors({ name: "Oppgi navnet ditt" });
-    startTransition(async () => {
-      const result = await sendGuestCode(phone, false);
-      if (!result.ok) return setServerErrors({ phone: result.error });
-      setCodeSentTo(result.phone);
-      setDemoCode(result.demoCode);
-    });
-  }
-
-  function onPublish(event: React.FormEvent) {
-    event.preventDefault();
-    setServerErrors({});
-    startTransition(async () => {
-      const result = await publishWithCode(input, { name, phone: codeSentTo ?? phone, code });
-      if (result.ok === true) router.push(`/mine/${result.requestId}?ny=1`);
-      else if (result.ok === false) {
-        setServerErrors(result.errors);
-        if (!("code" in result.errors) && !("name" in result.errors) && !("phone" in result.errors)) setStep("form");
       }
     });
   }
@@ -163,77 +126,6 @@ export function RequestForm({ today, loggedIn }: { today: string; loggedIn: bool
 
   const err = (path: string) => errors[path];
   const fieldId = (n: string) => `${formId}-${n}`;
-
-  if (step === "verify") {
-    return (
-      <div className="request-form">
-        <div className="card">
-          <h2>Bekreft mobilnummeret ditt</h2>
-          <p className="muted">
-            Lokalene ser verken navnet eller nummeret ditt før du selv aksepterer et tilbud. Vi
-            bruker nummeret til å varsle deg når det kommer tilbud.
-          </p>
-          {!codeSentTo ? (
-            <form onSubmit={onSendCode} noValidate>
-              <label htmlFor={fieldId("name")}>Navn</label>
-              <input
-                id={fieldId("name")}
-                autoComplete="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                aria-invalid={Boolean(err("name"))}
-              />
-              <FieldError message={err("name")} />
-              <label htmlFor={fieldId("phone")}>Mobilnummer</label>
-              <input
-                id={fieldId("phone")}
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                placeholder="912 34 567"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                aria-invalid={Boolean(err("phone"))}
-              />
-              <FieldError message={err("phone")} />
-              <button className="button button-primary spaced" disabled={pending}>
-                {pending ? "Sender …" : "Send kode på SMS"}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={onPublish} noValidate>
-              <p>Vi har sendt en kode til {codeSentTo}.</p>
-              {demoCode && (
-                <p className="notice">
-                  Demo: ingen SMS sendes. Koden er <strong>{demoCode}</strong>.
-                </p>
-              )}
-              <label htmlFor={fieldId("code")}>Kode</label>
-              <input
-                id={fieldId("code")}
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={6}
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                aria-invalid={Boolean(err("code"))}
-              />
-              <FieldError message={err("code")} />
-              <button className="button button-primary spaced" disabled={pending}>
-                {pending ? "Publiserer …" : "Bekreft og publiser"}
-              </button>
-              <button type="button" className="link-button" onClick={() => setCodeSentTo(undefined)}>
-                Endre nummer
-              </button>
-            </form>
-          )}
-        </div>
-        <button type="button" className="link-button" onClick={() => setStep("form")}>
-          Tilbake til skjemaet
-        </button>
-      </div>
-    );
-  }
 
   return (
     <form className="request-form" onSubmit={onSubmit} noValidate>
@@ -464,7 +356,7 @@ export function RequestForm({ today, loggedIn }: { today: string; loggedIn: bool
         </p>
       )}
       <button type="submit" className="button button-primary" disabled={pending}>
-        {pending ? "Sender …" : loggedIn ? "Publiser" : "Fortsett"}
+        {pending ? "Publiserer …" : "Publiser forespørselen"}
       </button>
     </form>
   );

@@ -47,29 +47,13 @@ export async function logout(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Engangskode på SMS for gjester
+// Gjesten logger inn igjen med mobilnummeret (uten SMS-kode i demoen)
 // ---------------------------------------------------------------------------
 
-export type CodeResult = { ok: true; phone: string; demoCode: string } | { ok: false; error: string };
-
-export async function sendGuestCode(rawPhone: string, mustExist: boolean): Promise<CodeResult> {
+export async function guestLoginByPhone(rawPhone: string): Promise<{ error: string } | undefined> {
   const parsed = norwegianMobile.safeParse(String(rawPhone ?? ""));
-  if (!parsed.success) return { ok: false, error: "Oppgi et norsk mobilnummer med 8 siffer" };
-  if (mustExist && !store.findGuestByPhone(parsed.data)) {
-    return { ok: false, error: "Vi finner ingen forespørsler på dette nummeret" };
-  }
-  // I den ekte løsningen sendes koden på SMS og vises aldri her.
-  return { ok: true, phone: parsed.data, demoCode: store.startPhoneVerification(parsed.data) };
-}
-
-export async function guestLoginWithCode(phone: string, code: string): Promise<{ error: string } | undefined> {
-  try {
-    store.verifyPhoneCode(String(phone), String(code));
-  } catch (error) {
-    if (error instanceof store.DemoRuleError) return { error: error.message };
-    throw error;
-  }
-  const guest = store.findGuestByPhone(String(phone));
+  if (!parsed.success) return { error: "Oppgi et norsk mobilnummer med 8 siffer" };
+  const guest = store.findGuestByPhone(parsed.data);
   if (!guest) return { error: "Vi finner ingen forespørsler på dette nummeret" };
   await setSessionUser(guest.id);
   revalidatePath("/", "layout");

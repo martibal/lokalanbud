@@ -43,10 +43,7 @@ async function loginGuest(phone) {
   await logout();
   await page.goto(B + "/logg-inn");
   await page.fill("#phone", phone);
-  await page.click("text=Send kode på SMS");
-  const code = await page.locator(".notice strong").innerText();
-  await page.fill("#code", code);
-  await page.click("button:has-text('Logg inn')");
+  await page.click("button:has-text('Se forespørslene')");
   await page.waitForURL((u) => u.pathname === "/mine");
 }
 
@@ -55,32 +52,31 @@ await page.goto(B + "/");
 await shot("01-forside");
 step("forsiden: " + (await page.locator(".entry-card strong").allInnerTexts()).join(" / "));
 
-// 2. Ny gjest legger inn behov og bekrefter med engangskode
-await page.click("text=Fortsett som gjest");
-await page.waitForURL(/ny-foresporsel/);
-await page.click("label.chip:has-text('Grünerløkka')");
-await page.fill("input[inputmode=numeric] >> nth=0", "70");
-await page.selectOption("select >> nth=0", "anniversary");
-await page.fill("input[inputmode=numeric] >> nth=1", "20000");
-await page.fill("input[type=date]", new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10));
-await page.locator("li:has-text('Garderobe') label:has-text('Må')").click();
-await page.locator("li:has-text('Tilgjengelig med rullestol') label:has-text('Ønske')").click();
-await shot("02-skjema");
-await page.click("button[type=submit]");
-await page.waitForSelector("text=Bekreft mobilnummeret ditt");
-await page.fill("input[autocomplete=name]", "Test Testesen");
-await page.fill("input[type=tel]", "987 65 432");
-await page.click("text=Send kode på SMS");
-const code = await page.locator(".notice strong").innerText();
-await page.fill("input[autocomplete=one-time-code]", "000000");
-await page.click("text=Bekreft og publiser");
-await page.waitForSelector("text=Feil kode");
-step("feil kode avvist");
-await page.fill("input[autocomplete=one-time-code]", code);
-await shot("03-kode");
-await page.click("text=Bekreft og publiser");
-await page.waitForURL(/\/mine\/.+\?ny=1/);
-step("forespørsel publisert etter bekreftet nummer");
+// 2. Ny gjest legger inn behov og publiserer med en gang, uten innlogging.
+// Den nye gjesten bruker et eget nettleservindu, slik en ekte gjest ville gjort.
+const guestCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+const guestPage = await guestCtx.newPage();
+guestPage.on("pageerror", (e) => problems.push("pageerror " + e.message));
+await guestPage.goto(B + "/");
+await guestPage.click("text=Fortsett som gjest");
+await guestPage.waitForURL(/ny-foresporsel/);
+await guestPage.click("label.chip:has-text('Grünerløkka')");
+await guestPage.fill("input[inputmode=numeric] >> nth=0", "70");
+await guestPage.selectOption("select >> nth=0", "anniversary");
+await guestPage.fill("input[inputmode=numeric] >> nth=1", "20000");
+await guestPage.fill("input[type=date]", new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10));
+await guestPage.locator("li:has-text('Garderobe') label:has-text('Må')").click();
+await guestPage.locator("li:has-text('Tilgjengelig med rullestol') label:has-text('Ønske')").click();
+await guestPage.screenshot({ path: `${process.env.SCREENSHOT_DIR ?? "/tmp"}/lokalbud-02-skjema.png`, fullPage: true });
+await guestPage.click("button[type=submit]");
+await guestPage.waitForURL(/\/mine\/.+\?ny=1/);
+step("forespørsel publisert med en gang");
+
+// Den dukker opp med en gang hos lokaler, også utenfor området
+await loginVenue("Amir");
+const fjordsalen = await page.locator(".request-row", { hasText: "Jubileum" }).count();
+if (fjordsalen !== 1) problems.push("Fjordsalen ser ikke den nye forespørselen");
+step("Fjordsalen (Frogner) ser den nye forespørselen: " + (fjordsalen === 1));
 
 // 3. Lokalet logger inn med (simulert) BankID og sender tilbud
 await loginVenue("Siri");
@@ -122,12 +118,12 @@ await page.waitForURL(/avtale/);
 await shot("06-avtale");
 step("avtale: " + (await page.locator(".agreement h1").innerText()));
 
-// 6. Den nye gjesten åpner tilbudet sitt
-await loginGuest("98765432");
-await page.locator(".list-item").first().click();
-await page.locator(".offer.teaser button").first().click();
-await page.waitForSelector(".offer .price");
-step("nytt tilbud åpnet: " + (await page.locator(".offer .price").first().innerText()));
+// 6. Den nye gjesten åpner tilbudet sitt i sitt eget vindu
+await guestPage.goto(B + "/mine");
+await guestPage.locator(".list-item").first().click();
+await guestPage.locator(".offer.teaser button").first().click();
+await guestPage.waitForSelector(".offer .price");
+step("nytt tilbud åpnet: " + (await guestPage.locator(".offer .price").first().innerText()));
 
 // 7. Tilganger: regnskap ser faktura, booking gjør ikke
 await loginVenue("Jonas");

@@ -21,7 +21,7 @@ export default async function NewRequestPage() {
           Har du allerede en forespørsel? <Link href="/logg-inn">Se forespørslene dine</Link>
         </p>
       )}
-      <RequestForm today={todayInOslo()} loggedIn={loggedIn} />
+      <RequestForm today={todayInOslo()} />
     </>
   );
 }

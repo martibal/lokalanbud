@@ -8,7 +8,7 @@ export default function GuestLoginPage() {
   return (
     <>
       <h1>Se forespørslene dine</h1>
-      <p className="lead">Logg inn med mobilnummeret du brukte da du la inn behovet.</p>
+      <p className="lead">Oppgi mobilnummeret ditt. I demoen trengs ingen SMS-kode.</p>
       <GuestLogin />
       <p className="muted small">
         Demo: Kari har nummer 912 34 567, Ola 412 34 567 og Ingrid 900 00 001.
