@@ -12,13 +12,15 @@ export default async function MyRequestsPage() {
 
   return (
     <>
-      <h1>Mine forespørsler</h1>
+      <div className="page-head">
+        <h1>Mine forespørsler</h1>
+        <Link href="/ny-foresporsel" className="button button-party">
+          Ny forespørsel
+        </Link>
+      </div>
       {requests.length === 0 && (
-        <div className="card">
+        <div className="empty">
           <p>Du har ingen forespørsler ennå.</p>
-          <Link href="/ny-foresporsel" className="button button-primary">
-            Legg inn behovet ditt
-          </Link>
         </div>
       )}
       <ul className="list">
@@ -44,7 +46,7 @@ export default async function MyRequestsPage() {
                     {eventTypeLabel(r.input.eventType)}, {r.input.guestCount} gjester
                   </strong>
                   <span className="muted">
-                    {formatDateRange(r.input.date)} · {areasLabel(r.input.areas)}
+                    {formatDateRange(r.input.date)}, {areasLabel(r.input.areas)}
                   </span>
                 </div>
                 <span className={confirmed ? "badge good" : active > 0 || accepted ? "badge accent" : "badge"}>

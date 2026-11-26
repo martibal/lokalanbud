@@ -11,7 +11,7 @@ function withError(path: string, error: unknown): never {
   const message = error instanceof store.DemoRuleError ? error.message : "Noe gikk galt";
   if (!(error instanceof store.DemoRuleError)) console.error(error);
   revalidatePath("/", "layout");
-  redirect(`${path}?feil=${encodeURIComponent(message)}`);
+  redirect(`${path}${path.includes("?") ? "&" : "?"}feil=${encodeURIComponent(message)}`);
 }
 
 function str(form: FormData, key: string): string {
@@ -141,8 +141,12 @@ export async function submitOfferAction(input: OfferFormInput): Promise<{ error:
   try {
     store.submitOffer(user.id, String(input.requestId), {
       totalPriceNok: Number(input.totalPriceNok),
-      conditions: String(input.conditions ?? "").trim().slice(0, 2000),
-      cancellationTerms: String(input.cancellationTerms ?? "").trim().slice(0, 1000),
+      conditions: String(input.conditions ?? "")
+        .trim()
+        .slice(0, 2000),
+      cancellationTerms: String(input.cancellationTerms ?? "")
+        .trim()
+        .slice(0, 1000),
       answers,
     });
   } catch (error) {
@@ -181,4 +185,34 @@ export async function rejectAcceptedAction(form: FormData): Promise<void> {
   }
   revalidatePath("/", "layout");
   redirect("/lokale/tilbud");
+}
+
+// ---------------------------------------------------------------------------
+// Lagrede søk
+// ---------------------------------------------------------------------------
+
+export async function saveSearchAction(form: FormData): Promise<void> {
+  const user = await requireVenueUser();
+  const query = str(form, "query");
+  try {
+    store.saveSearch(user.id, str(form, "name"), query, form.get("notify") === "1");
+  } catch (error) {
+    withError(`/lokale?${query}`, error);
+  }
+  revalidatePath("/", "layout");
+  redirect("/lokale/sok?lagret=1");
+}
+
+export async function toggleNotifyAction(form: FormData): Promise<void> {
+  const user = await requireVenueUser();
+  store.toggleSavedSearchNotify(user.id, str(form, "id"));
+  revalidatePath("/", "layout");
+  redirect("/lokale/sok");
+}
+
+export async function deleteSearchAction(form: FormData): Promise<void> {
+  const user = await requireVenueUser();
+  store.deleteSavedSearch(user.id, str(form, "id"));
+  revalidatePath("/", "layout");
+  redirect("/lokale/sok");
 }

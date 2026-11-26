@@ -16,7 +16,11 @@ const STATUS = {
   superseded: "Ny runde startet",
 } as const;
 
-export default async function VenueOffersPage({ searchParams }: { searchParams: Promise<{ sendt?: string; feil?: string }> }) {
+export default async function VenueOffersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sendt?: string; feil?: string }>;
+}) {
   const user = await requireVenueUser();
   const { sendt, feil } = await searchParams;
   const offers = venueOffers(user.id);
@@ -24,7 +28,9 @@ export default async function VenueOffersPage({ searchParams }: { searchParams: 
 
   return (
     <>
-      <h1>Våre tilbud</h1>
+      <div className="page-head">
+        <h1>Våre tilbud</h1>
+      </div>
       {sendt && <p className="notice">Tilbudet er sendt. Gjesten får SMS.</p>}
       <ErrorNotice message={feil} />
       {offers.length === 0 && (
@@ -42,7 +48,7 @@ export default async function VenueOffersPage({ searchParams }: { searchParams: 
           const opened = billingOpened(offer.id);
           const guest = getUser(request.guestId);
           return (
-            <li key={offer.id} className={`card offer-row ${offer.status}`}>
+            <li key={offer.id} className={`card offer ${offer.status}`}>
               <div className="offer-head">
                 <div>
                   <strong>
@@ -50,19 +56,23 @@ export default async function VenueOffersPage({ searchParams }: { searchParams: 
                   </strong>
                   <span className="muted">{formatDateRange(request.input.date)}</span>
                 </div>
-                <span className={offer.status === "confirmed" ? "badge good" : offer.status === "accepted" ? "badge urgent" : "badge"}>
+                <span
+                  className={
+                    offer.status === "confirmed" ? "badge good" : offer.status === "accepted" ? "badge urgent" : "badge"
+                  }
+                >
                   {STATUS[offer.status]}
                 </span>
               </div>
               <p>
-                {formatNok(version.totalPriceNok)} · versjon {version.version} · sendt {timeAgo(offer.createdAt)} ·{" "}
-                {opened ? "åpnet av gjesten" : "ikke åpnet ennå"}
+                <strong>{formatNok(version.totalPriceNok)}</strong>, versjon {version.version}, sendt{" "}
+                {timeAgo(offer.createdAt)}. {opened ? "Gjesten har åpnet tilbudet." : "Ikke åpnet ennå."}
               </p>
 
               {(offer.status === "accepted" || offer.status === "confirmed") && guest && (
                 <p className="contact">
                   Gjest: <strong>{guest.name}</strong>
-                  {guest.kind === "guest" && ` · ${guest.phone}`}
+                  {guest.kind === "guest" && guest.phone && `, ${guest.phone}`}
                 </p>
               )}
 
@@ -70,7 +80,7 @@ export default async function VenueOffersPage({ searchParams }: { searchParams: 
                 <div className="actions-row">
                   <form action={confirmBookingAction}>
                     <input type="hidden" name="offerId" value={offer.id} />
-                    <button className="button button-primary">Bekreft booking</button>
+                    <button className="button button-party">Bekreft booking</button>
                   </form>
                   <form action={rejectAcceptedAction}>
                     <input type="hidden" name="offerId" value={offer.id} />

@@ -3,7 +3,14 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { currentUser } from "@/lib/demo/session";
 import { getOffer, getRequest, getUser, getVenue } from "@/lib/demo/store";
-import { ANSWER_LABELS, criterionLabel, eventTypeLabel, formatDateRange, formatDateTime, formatNok } from "@/lib/format";
+import {
+  ANSWER_LABELS,
+  criterionLabel,
+  eventTypeLabel,
+  formatDateRange,
+  formatDateTime,
+  formatNok,
+} from "@/lib/format";
 
 export const metadata: Metadata = { title: "Avtaledokument" };
 
@@ -26,7 +33,7 @@ export default async function AgreementPage({ params }: { params: Promise<{ id: 
     <article className="card agreement">
       <header>
         <p className="muted">Avtaledokument</p>
-        <h1>{offer.reference}</h1>
+        <h1 className="reference">{offer.reference}</h1>
         <p className="badge good">Bekreftet av begge parter</p>
       </header>
 

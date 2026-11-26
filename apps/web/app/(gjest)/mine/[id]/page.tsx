@@ -49,8 +49,7 @@ export default async function RequestPage({
       <ErrorNotice message={feil} />
       {ny && (
         <p className="notice">
-          Forespørselen er publisert. Lokalene som passer, er varslet, og du får SMS når det kommer
-          tilbud.
+          Forespørselen er publisert. Lokalene som passer, er varslet, og du får SMS når det kommer tilbud.
         </p>
       )}
 
@@ -67,8 +66,8 @@ export default async function RequestPage({
         <div className="card notice-card">
           <h2>Venter på bekreftelse fra {getVenue(accepted.venueId)?.name}</h2>
           <p>
-            Du har akseptert tilbudet. Lokalet har fått navnet og nummeret ditt og må bekrefte innen
-            fristen. Du får SMS når det skjer.
+            Du har akseptert tilbudet. Lokalet har fått navnet og nummeret ditt og må bekrefte innen fristen. Du får SMS
+            når det skjer.
           </p>
         </div>
       )}
@@ -130,9 +129,7 @@ function OfferCard({ offer, request, canAct }: { offer: DemoOffer; request: Demo
   const version = currentVersion(offer);
   const isOpen = Boolean(billingOpened(offer.id));
   const wishes = request.criteria.filter((c) => c.importance === "wish");
-  const wishesMet = wishes.filter(
-    (c) => version.answers.find((a) => a.criterionId === c.id)?.value === "meets",
-  ).length;
+  const wishesMet = wishes.filter((c) => version.answers.find((a) => a.criterionId === c.id)?.value === "meets").length;
 
   if (!isOpen) {
     return (
@@ -154,7 +151,7 @@ function OfferCard({ offer, request, canAct }: { offer: DemoOffer; request: Demo
         <form action={openOfferAction}>
           <input type="hidden" name="offerId" value={offer.id} />
           <input type="hidden" name="requestId" value={request.id} />
-          <button className="button button-primary">Åpne tilbudet</button>
+          <button className="button button-party">Åpne tilbudet</button>
         </form>
       </div>
     );
@@ -166,7 +163,7 @@ function OfferCard({ offer, request, canAct }: { offer: DemoOffer; request: Demo
         <div>
           <strong>{venue.name}</strong>
           <span className="muted">
-            {areaName(venue.area)} · plass til {venue.capacity}
+            {areaName(venue.area)}, plass til {venue.capacity} gjester
           </span>
         </div>
         <div className="price">{formatNok(version.totalPriceNok)}</div>
@@ -198,10 +195,9 @@ function OfferCard({ offer, request, canAct }: { offer: DemoOffer; request: Demo
         <form action={acceptOfferAction}>
           <input type="hidden" name="offerId" value={offer.id} />
           <input type="hidden" name="requestId" value={request.id} />
-          <button className="button button-primary">Aksepter tilbudet</button>
+          <button className="button button-party">Aksepter tilbudet</button>
           <p className="muted small">
-            Lokalet får da navnet og nummeret ditt og må bekrefte. Du forplikter deg først når
-            lokalet har bekreftet.
+            Lokalet får da navnet og nummeret ditt og må bekrefte. Du forplikter deg først når lokalet har bekreftet.
           </p>
         </form>
       )}

@@ -92,10 +92,23 @@ export type BillingEvent = {
   openedAt: string;
 };
 
+export type SavedSearch = {
+  id: string;
+  venueId: string;
+  createdBy: string;
+  name: string;
+  /** Filteret som spørrestreng, samme format som adressefeltet på oversikten. */
+  query: string;
+  notify: boolean;
+  createdAt: string;
+  lastSeenAt: string;
+};
+
 /** Lokaler som har svart «Passer ikke». Gratis, og forespørselen skjules for dem. */
 export type Decline = { requestId: string; venueId: string; reason: string; at: string };
 
 type Store = {
+  savedSearches: SavedSearch[];
   users: DemoUser[];
   venues: Venue[];
   requests: DemoRequest[];
@@ -194,13 +207,28 @@ function seed(): Store {
     { id: "u-ola", kind: "guest", name: "Ola Hansen", phone: "+4741234567" },
     { id: "u-ingrid", kind: "guest", name: "Ingrid Berg", phone: "+4790000001" },
     { id: "u-bryggeloftet", kind: "venue", name: "Siri (booking)", venueId: "v-bryggeloftet", role: "booking" },
-    { id: "u-bryggeloftet-regnskap", kind: "venue", name: "Jonas (regnskap)", venueId: "v-bryggeloftet", role: "accounting" },
+    {
+      id: "u-bryggeloftet-regnskap",
+      kind: "venue",
+      name: "Jonas (regnskap)",
+      venueId: "v-bryggeloftet",
+      role: "accounting",
+    },
     { id: "u-sagahuset", kind: "venue", name: "Per (eier)", venueId: "v-sagahuset", role: "owner" },
     { id: "u-fjordsalen", kind: "venue", name: "Amir (booking)", venueId: "v-fjordsalen", role: "booking" },
     { id: "u-lindekroa", kind: "venue", name: "Lise (eier)", venueId: "v-lindekroa", role: "owner" },
   ];
 
-  const store: Store = { users, venues, requests: [], offers: [], billing: [], declines: [], referenceCounter: 0 };
+  const store: Store = {
+    savedSearches: [],
+    users,
+    venues,
+    requests: [],
+    offers: [],
+    billing: [],
+    declines: [],
+    referenceCounter: 0,
+  };
 
   const mk = (guestId: string, daysAhead: number, input: Omit<RequestInput, "date">, hoursAgo: number) => {
     const full: RequestInput = { ...input, date: { mode: "exact", date: addDays(today, daysAhead) } };
@@ -274,7 +302,11 @@ function seed(): Store {
     cancellationTerms: "Gratis avbestilling inntil 30 dager før. Deretter 50 % av leien.",
     answers: answerAll(kari, (c) =>
       c.kind === "fixed" && c.key === "wheelchair"
-        ? { criterionId: c.id, value: "meets_with_reservation", comment: "Rampe ved bakinngangen, ikke heis til loftet." }
+        ? {
+            criterionId: c.id,
+            value: "meets_with_reservation",
+            comment: "Rampe ved bakinngangen, ikke heis til loftet.",
+          }
         : undefined,
     ),
   });
@@ -309,7 +341,12 @@ function insertOffer(
     status: "active",
     createdAt: new Date().toISOString(),
     versions: [
-      { ...versionBody, contentHash: hashVersion(id, versionBody), createdAt: new Date().toISOString(), createdBy: userId },
+      {
+        ...versionBody,
+        contentHash: hashVersion(id, versionBody),
+        createdAt: new Date().toISOString(),
+        createdBy: userId,
+      },
     ],
   };
   store.offers.push(offer);
@@ -472,7 +509,8 @@ export function closeRequest(guestId: string, requestId: string): void {
   if (!request || request.guestId !== guestId) throw new DemoRuleError("Ingen tilgang");
   if (request.status !== "open") return;
   request.status = "closed";
-  for (const o of offersForRequest(request.id)) if (o.status === "active" || o.status === "accepted") o.status = "declined";
+  for (const o of offersForRequest(request.id))
+    if (o.status === "active" || o.status === "accepted") o.status = "declined";
 }
 
 // ---------------------------------------------------------------------------
@@ -619,4 +657,54 @@ export function venueBilling(userId: string): { events: BillingEvent[]; venue: V
       .sort((a, b) => b.openedAt.localeCompare(a.openedAt)),
     venue: getVenue(user.venueId)!,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Lagrede søk
+// ---------------------------------------------------------------------------
+
+export function saveSearch(userId: string, name: string, query: string, notify: boolean): SavedSearch {
+  const user = venueUser(userId);
+  const trimmed = name.trim().slice(0, 60);
+  if (trimmed.length < 2) throw new DemoRuleError("Gi søket et navn");
+  if (db().savedSearches.filter((s) => s.venueId === user.venueId).length >= 20) {
+    throw new DemoRuleError("Dere kan ha maks 20 lagrede søk");
+  }
+  const now = new Date().toISOString();
+  const search: SavedSearch = {
+    id: randomUUID(),
+    venueId: user.venueId,
+    createdBy: userId,
+    name: trimmed,
+    query: query.slice(0, 1000),
+    notify,
+    createdAt: now,
+    lastSeenAt: now,
+  };
+  db().savedSearches.push(search);
+  return search;
+}
+
+export function savedSearchesForVenue(userId: string): SavedSearch[] {
+  const user = venueUser(userId);
+  return db().savedSearches.filter((s) => s.venueId === user.venueId);
+}
+
+export function getSavedSearch(userId: string, id: string): SavedSearch | undefined {
+  return savedSearchesForVenue(userId).find((s) => s.id === id);
+}
+
+export function markSavedSearchSeen(userId: string, id: string): void {
+  const search = getSavedSearch(userId, id);
+  if (search) search.lastSeenAt = new Date().toISOString();
+}
+
+export function toggleSavedSearchNotify(userId: string, id: string): void {
+  const search = getSavedSearch(userId, id);
+  if (search) search.notify = !search.notify;
+}
+
+export function deleteSavedSearch(userId: string, id: string): void {
+  const user = venueUser(userId);
+  db().savedSearches = db().savedSearches.filter((s) => !(s.id === id && s.venueId === user.venueId));
 }

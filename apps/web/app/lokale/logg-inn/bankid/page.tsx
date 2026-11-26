@@ -19,9 +19,7 @@ export default function SimulatedBankIdPage() {
         <Link href="/lokale/logg-inn">Tilbake</Link>
       </p>
       <h1>BankID</h1>
-      <p className="notice">
-        Simulert innlogging for demoen. Velg hvem du vil logge inn som.
-      </p>
+      <p className="notice">Simulert innlogging for demoen. Velg hvem du vil logge inn som.</p>
       <div className="role-grid">
         {venueUsers.map((u) => (
           <form key={u.id} action={bankIdLogin}>

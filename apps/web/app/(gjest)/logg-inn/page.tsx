@@ -10,9 +10,7 @@ export default function GuestLoginPage() {
       <h1>Se forespørslene dine</h1>
       <p className="lead">Oppgi mobilnummeret ditt. I demoen trengs ingen SMS-kode.</p>
       <GuestLogin />
-      <p className="muted small">
-        Demo: Kari har nummer 912 34 567, Ola 412 34 567 og Ingrid 900 00 001.
-      </p>
+      <p className="muted small">Demo: Kari har nummer 912 34 567, Ola 412 34 567 og Ingrid 900 00 001.</p>
       <p>
         <Link href="/ny-foresporsel">Legg inn et nytt behov i stedet</Link>
       </p>

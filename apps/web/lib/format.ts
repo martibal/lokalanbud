@@ -30,7 +30,9 @@ export function formatDateTime(iso: string): string {
   return dateTimeFormat.format(new Date(iso));
 }
 
-export function formatDateRange(date: { mode: "exact"; date: string } | { mode: "flexible"; from: string; to: string }) {
+export function formatDateRange(
+  date: { mode: "exact"; date: string } | { mode: "flexible"; from: string; to: string },
+) {
   return date.mode === "exact"
     ? formatDate(date.date)
     : `Fleksibel: ${formatShortDate(date.from)} – ${formatShortDate(date.to)}`;

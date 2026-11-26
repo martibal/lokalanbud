@@ -22,25 +22,26 @@ export default async function BillingPage() {
 
   return (
     <>
-      <h1>Fakturagrunnlag</h1>
+      <div className="page-head">
+        <h1>Fakturagrunnlag</h1>
+      </div>
       <p className="lead">
-        Dere betaler bare for tilbud gjesten har åpnet. Alt samles på én faktura i måneden. Beløp
-        er uten mva.
+        Dere betaler bare for tilbud gjesten har åpnet. Alt samles på én faktura i måneden. Beløp er uten mva.
       </p>
       <div className="stats">
-        <div className="card stat">
-          <span className="muted">Denne måneden</span>
+        <div className="stat highlight">
           <strong>{formatNok(total)}</strong>
+          <span>denne måneden, uten mva</span>
         </div>
-        <div className="card stat">
-          <span className="muted">Åpnede tilbud</span>
+        <div className="stat">
           <strong>{events.length}</strong>
+          <span>åpnede tilbud</span>
         </div>
-        <div className="card stat">
-          <span className="muted">Gratistilbud igjen</span>
+        <div className="stat">
           <strong>
             {freeLeft} av {FREE_INTRO_OFFERS}
           </strong>
+          <span>gratistilbud igjen</span>
         </div>
       </div>
       <div className="card">
@@ -69,7 +70,9 @@ export default async function BillingPage() {
                   <tr key={e.id}>
                     <td>{formatDateTime(e.openedAt)}</td>
                     <td>
-                      {request ? `${eventTypeLabel(request.input.eventType)}, ${request.input.guestCount} gjester` : "–"}
+                      {request
+                        ? `${eventTypeLabel(request.input.eventType)}, ${request.input.guestCount} gjester`
+                        : "–"}
                     </td>
                     <td className="num">{e.freeIntro ? "Gratis" : formatNok(e.feeNok)}</td>
                   </tr>

@@ -81,16 +81,25 @@ export function OfferForm({
 
   return (
     <form className="request-form" onSubmit={submit} noValidate>
-      <fieldset>
-        <legend>Svar på hvert krav</legend>
-        <ul className="criteria">
+      <section className="card">
+        <h2>Svar på hvert krav</h2>
+        <p className="hint">
+          Må-krav må være oppfylt for å sende tilbud. Avvik fra ønsker forklarer du med én setning.
+        </p>
+        <ul className="criteria-answers">
           {criteria.map((c) => {
             const a = answers[c.id]!;
-            const options = c.importance === "must" ? OPTIONS.filter((o) => o.value !== "meets_with_reservation") : OPTIONS;
+            const options =
+              c.importance === "must" ? OPTIONS.filter((o) => o.value !== "meets_with_reservation") : OPTIONS;
             return (
               <li key={c.id}>
-                <span id={`k-${c.id}`}>
-                  {c.label} {c.importance === "must" ? <span className="tag must small">Må</span> : <span className="tag small">Ønske</span>}
+                <span id={`k-${c.id}`} className="crit-label">
+                  {c.label}{" "}
+                  {c.importance === "must" ? (
+                    <span className="tag must small">Må</span>
+                  ) : (
+                    <span className="tag small">Ønske</span>
+                  )}
                 </span>
                 <div className="segmented small" role="radiogroup" aria-labelledby={`k-${c.id}`}>
                   {options.map((o) => (
@@ -115,34 +124,50 @@ export function OfferForm({
                   />
                 )}
                 {c.importance === "must" && a.value === "does_not_meet" && (
-                  <p className="field-error">Dette er et må-krav. Dere kan ikke sende tilbud, men kan svare «Passer ikke» gratis.</p>
+                  <p className="field-error">
+                    Dette er et må-krav. Dere kan ikke sende tilbud, men kan svare «Passer ikke» gratis.
+                  </p>
                 )}
               </li>
             );
           })}
         </ul>
-      </fieldset>
+      </section>
 
-      <fieldset>
-        <legend>Pris og vilkår</legend>
-        <label htmlFor="pris">Totalpris for hele arrangementet</label>
-        <div className="suffix-input">
-          <input id="pris" inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} />
-          <span aria-hidden="true">kr</span>
+      <section className="card">
+        <h2>Pris og vilkår</h2>
+        <div className="field">
+          <label htmlFor="pris">Totalpris for hele arrangementet</label>
+          <div className="suffix-input">
+            <input id="pris" inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} />
+            <span aria-hidden="true">kr</span>
+          </div>
+          <p className="hint spaced">
+            Gjestens makspris: {formatNok(budgetNok)}
+            {budgetIndicative ? ", veiledende" : ""}
+          </p>
         </div>
-        <p className="muted small">Gjestens budsjett: {formatNok(budgetNok)}{budgetIndicative ? " (veiledende)" : ""}</p>
-        <label htmlFor="inkludert">Hva er inkludert</label>
-        <textarea
-          id="inkludert"
-          rows={3}
-          maxLength={2000}
-          placeholder="For eksempel: leie fra kl. 17 til 01, bord, stoler, lydanlegg og vakt"
-          value={conditions}
-          onChange={(e) => setConditions(e.target.value)}
-        />
-        <label htmlFor="avbestilling">Avbestillingsvilkår</label>
-        <input id="avbestilling" maxLength={1000} value={cancellation} onChange={(e) => setCancellation(e.target.value)} />
-      </fieldset>
+        <div className="field">
+          <label htmlFor="inkludert">Hva er inkludert</label>
+          <textarea
+            id="inkludert"
+            rows={3}
+            maxLength={2000}
+            placeholder="For eksempel: leie fra kl. 17 til 01, bord, stoler, lydanlegg og vakt"
+            value={conditions}
+            onChange={(e) => setConditions(e.target.value)}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="avbestilling">Avbestillingsvilkår</label>
+          <input
+            id="avbestilling"
+            maxLength={1000}
+            value={cancellation}
+            onChange={(e) => setCancellation(e.target.value)}
+          />
+        </div>
+      </section>
 
       <div className="card fee">
         <strong>Pris for dette tilbudet</strong>
@@ -154,7 +179,7 @@ export function OfferForm({
           {error}
         </p>
       )}
-      <button type="submit" className="button button-primary" disabled={pending || blockingMust.length > 0}>
+      <button type="submit" className="button button-party button-block" disabled={pending || blockingMust.length > 0}>
         {pending ? "Sender …" : "Send tilbud"}
       </button>
     </form>

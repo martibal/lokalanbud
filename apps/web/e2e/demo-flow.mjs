@@ -12,7 +12,7 @@ const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, de
 const page = await ctx.newPage();
 const problems = [];
 page.on("console", (m) => {
-  if (m.type() === "error") problems.push(m.text());
+  if (m.type() === "error") problems.push(`${m.text()} (${m.location()?.url ?? ""})`);
 });
 page.on("response", (r) => {
   if (r.status() >= 400) problems.push(`${r.status()} ${r.url()}`);
@@ -23,8 +23,8 @@ const shot = (n) =>
 const step = (s) => console.log("✓", s);
 
 async function logout() {
-  await page.goto(B + "/");
-  const button = page.locator("nav button", { hasText: "Logg ut" });
+  await page.goto(B + "/demo");
+  const button = page.locator("button", { hasText: "Logg ut" });
   if (await button.count()) {
     await button.click();
     await button.waitFor({ state: "detached" });
@@ -33,7 +33,8 @@ async function logout() {
 
 async function loginVenue(name) {
   await logout();
-  await page.click("text=Fortsett som lokale");
+  await page.goto(B + "/");
+  await page.click("text=Finn gjester");
   await page.click("text=Logg inn med BankID");
   await page.locator("button.role-card", { hasText: name }).first().click();
   await page.waitForURL((u) => u.pathname === "/lokale");
@@ -47,10 +48,15 @@ async function loginGuest(phone) {
   await page.waitForURL((u) => u.pathname === "/mine");
 }
 
+// 0. Start med eksempeldataene, slik at testen kan kjøres flere ganger
+await page.goto(B + "/demo");
+await page.click("button:has-text('Nullstill demoen')");
+await page.waitForURL(/nullstilt=1/);
+
 // 1. Forsiden har to valg
 await page.goto(B + "/");
 await shot("01-forside");
-step("forsiden: " + (await page.locator(".entry-card strong").allInnerTexts()).join(" / "));
+step("forsiden: " + (await page.locator(".split-headline").allInnerTexts()).join(" / "));
 
 // 2. Ny gjest legger inn behov og publiserer med en gang, uten innlogging.
 // Den nye gjesten bruker et eget nettleservindu, slik en ekte gjest ville gjort.
@@ -58,30 +64,42 @@ const guestCtx = await browser.newContext({ viewport: { width: 390, height: 844 
 const guestPage = await guestCtx.newPage();
 guestPage.on("pageerror", (e) => problems.push("pageerror " + e.message));
 await guestPage.goto(B + "/");
-await guestPage.click("text=Fortsett som gjest");
+await guestPage.click("text=Finn lokale");
 await guestPage.waitForURL(/ny-foresporsel/);
+await guestPage.click("button:has-text('Neste')");
+const stepErrors = await guestPage.locator(".field-error").count();
+if (stepErrors < 3) problems.push("steg 1 viser ikke feil for tomme felt");
+step(`tomt steg 1 stoppes med ${stepErrors} feilmeldinger`);
+await guestPage.click("label.tile:has-text('Jubileum')");
+await guestPage.fill("input[placeholder='Antall gjester']", "70");
 await guestPage.click("label.chip:has-text('Grünerløkka')");
-await guestPage.fill("input[inputmode=numeric] >> nth=0", "70");
-await guestPage.selectOption("select >> nth=0", "anniversary");
-await guestPage.fill("input[inputmode=numeric] >> nth=1", "20000");
 await guestPage.fill("input[type=date]", new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10));
-await guestPage.locator("li:has-text('Garderobe') label:has-text('Må')").click();
-await guestPage.locator("li:has-text('Tilgjengelig med rullestol') label:has-text('Ønske')").click();
-await guestPage.screenshot({ path: `${process.env.SCREENSHOT_DIR ?? "/tmp"}/lokalbud-02-skjema.png`, fullPage: true });
-await guestPage.click("button[type=submit]");
+await guestPage.screenshot({ path: `${process.env.SCREENSHOT_DIR ?? "/tmp"}/lokalbud-02-steg1.png`, fullPage: true });
+await guestPage.click("button:has-text('Neste')");
+await guestPage.getByLabel("Makspris").fill("20000");
+await guestPage.click("label.chip:has-text('Garderobe')");
+await guestPage.click("label.chip:has-text('Tilgjengelig med rullestol')");
+await guestPage.click("label.switch-row:has-text('Garderobe')");
+await guestPage.screenshot({ path: `${process.env.SCREENSHOT_DIR ?? "/tmp"}/lokalbud-02-steg2.png`, fullPage: true });
+await guestPage.click("button:has-text('Neste')");
+await guestPage.waitForSelector("text=Ser dette riktig ut?");
+const review = await guestPage.locator(".review .tags").innerText();
+if (!review.includes("Må: Garderobe")) problems.push("oppsummeringen viser ikke må-kravet");
+await guestPage.screenshot({ path: `${process.env.SCREENSHOT_DIR ?? "/tmp"}/lokalbud-02-steg3.png`, fullPage: true });
+await guestPage.click("button:has-text('Publiser forespørselen')");
 await guestPage.waitForURL(/\/mine\/.+\?ny=1/);
 step("forespørsel publisert med en gang");
 
 // Den dukker opp med en gang hos lokaler, også utenfor området
 await loginVenue("Amir");
-const fjordsalen = await page.locator(".request-row", { hasText: "Jubileum" }).count();
+const fjordsalen = await page.locator(".request-card", { hasText: "Jubileum" }).count();
 if (fjordsalen !== 1) problems.push("Fjordsalen ser ikke den nye forespørselen");
 step("Fjordsalen (Frogner) ser den nye forespørselen: " + (fjordsalen === 1));
 
 // 3. Lokalet logger inn med (simulert) BankID og sender tilbud
 await loginVenue("Siri");
 await shot("04-lokale-oversikt");
-await page.locator(".request-row", { hasText: "Jubileum" }).click();
+await page.locator(".request-card", { hasText: "Jubileum" }).click();
 await page.locator("li:has-text('Garderobe') label:has-text('Ikke oppfylt')").click();
 step("må-krav blokkerer: " + (await page.locator("button[type=submit]").isDisabled()));
 await page.locator("li:has-text('Garderobe') label:has-text('Oppfylt') >> nth=0").click();
@@ -135,7 +153,22 @@ await page.goto(B + "/lokale/faktura");
 await page.waitForURL((u) => u.pathname === "/lokale");
 step("booking sendes bort fra faktura");
 await loginVenue("Lise");
-step("Lindekroa ser: " + (await page.locator(".request-row strong").allInnerTexts()).join(", "));
+step("Lindekroa ser: " + (await page.locator(".request-card h3").allInnerTexts()).join(", "));
+
+// Lagret søk
+await loginVenue("Siri");
+if (await page.locator(".filter-toggle").isVisible()) await page.click(".filter-toggle");
+await page.locator(".filters label.chip", { hasText: "Grünerløkka" }).click();
+await page.click("button:has-text('Vis treff')");
+await page.waitForURL(/omrade=grunerlokka/);
+await page.fill("#sokenavn", "Løkka");
+await page.click("button:has-text('Lagre søk')");
+await page.waitForURL(/\/lokale\/sok/);
+await shot("08-lagrede-sok");
+step("lagret søk: " + (await page.locator(".list h2").allInnerTexts()).join(", "));
+await page.click("text=Vis treff");
+await page.waitForURL(/sok=/);
+step("treff i lagret søk: " + (await page.locator(".request-card").count()));
 
 // 8. Sider som krever innlogging, sender videre til riktig innlogging
 await logout();
