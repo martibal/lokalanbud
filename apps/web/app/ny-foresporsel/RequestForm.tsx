@@ -131,14 +131,20 @@ export function RequestForm({ today }: { today: string }) {
   if (result?.ok) {
     return (
       <div className="card success" role="status">
-        <h2>Forespørselen er klar</h2>
+        <h2>Forespørselen er publisert</h2>
         <p>
           {result.summary.guestCount} gjester, {result.summary.areaCount}{" "}
           {result.summary.areaCount === 1 ? "område" : "områder"} og {result.summary.criteriaCount}{" "}
           {result.summary.criteriaCount === 1 ? "krav" : "krav"}.
           {result.urgent && " Den er merket som hastesak og varsles først."}
         </p>
-        <p>Neste steg er å bekrefte mobilnummeret ditt med en engangskode.</p>
+        <p>
+          Lokalene som passer, er varslet. Du får en SMS når det kommer tilbud. I den ekte løsningen
+          bekrefter du først mobilnummeret ditt med en engangskode.
+        </p>
+        <a className="button button-primary" href={`/mine/${result.requestId}`}>
+          Se forespørselen
+        </a>
       </div>
     );
   }

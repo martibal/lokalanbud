@@ -10,6 +10,10 @@ export default function HomePage() {
       <Link href="/ny-foresporsel" className="button button-primary">
         Legg inn behovet ditt
       </Link>
+      <p className="notice">
+        Dette er en demo. <Link href="/demo">Velg rolle</Link> for å prøve både gjestesiden og
+        lokalsiden.
+      </p>
       <ol className="steps">
         <li>
           <strong>Fyll ut behovet</strong>

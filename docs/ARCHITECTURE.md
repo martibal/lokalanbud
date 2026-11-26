@@ -36,6 +36,13 @@
    faktureringshendelse, gratis for lokalets tre første.
 5. Endringer gir en ny versjon med `revise_offer()`, uten ny fakturering.
 
+## Demoversjonen
+
+`apps/web/lib/demo` er et lager i minnet med oppdiktede data og rollevalg via en
+informasjonskapsel. Det bruker de samme reglene fra `packages/core` som den ekte
+løsningen, men erstatter innlogging og database. Det fjernes eller slås av før
+produksjon, og skal byttes ut med kall til databasefunksjonene i `db/migrations`.
+
 ## Gjenstår
 
 - Kobling mellom nettsiden og Supabase, og SMS-bekreftelse for gjester.

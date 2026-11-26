@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
+import { currentUser } from "@/lib/demo/session";
+import { getVenue } from "@/lib/demo/store";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,21 +22,43 @@ const isProductionStage = process.env.LOKALBUD_STAGE === "production";
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Leser hodene for å gjøre siden dynamisk, slik at hver visning får sin egen nonce.
   await headers();
+  const user = await currentUser();
+  const venue = user?.kind === "venue" ? getVenue(user.venueId) : undefined;
 
   return (
     <html lang="nb">
       <body>
         {!isProductionStage && (
           <div className="stage-banner" role="note">
-            Utviklingsversjon. Ikke i drift, og ingenting sendes til lokaler.
+            Demoversjon med oppdiktede lokaler og gjester. Ingenting sendes til noen.
           </div>
         )}
         <header className="site-header">
           <Link href="/" className="brand">
             Lokalbud
           </Link>
+          <nav className="nav" aria-label="Hovedmeny">
+            {user?.kind === "guest" && (
+              <>
+                <Link href="/ny-foresporsel">Nytt behov</Link>
+                <Link href="/mine">Mine forespørsler</Link>
+              </>
+            )}
+            {user?.kind === "venue" && (
+              <>
+                <Link href="/lokale">Forespørsler</Link>
+                <Link href="/lokale/tilbud">Våre tilbud</Link>
+                {(user.role === "owner" || user.role === "accounting") && (
+                  <Link href="/lokale/faktura">Faktura</Link>
+                )}
+              </>
+            )}
+            <Link href="/demo" className="nav-role">
+              {user ? (venue ? `${venue.name} · ${user.name}` : user.name) : "Velg rolle"}
+            </Link>
+          </nav>
         </header>
-        <main className="page">{children}</main>
+        <main className={user?.kind === "venue" ? "page wide" : "page"}>{children}</main>
         <footer className="site-footer">
           <p>Lokalbud formidler. Avtalen inngås mellom deg og lokalet.</p>
         </footer>

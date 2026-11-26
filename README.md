@@ -17,7 +17,43 @@ lokalene som passer, sender tilbud. Konseptet er beskrevet i konseptnotatet
 | `db/tests` | Tester av tilgangsstyring, tilbudsregler og fakturering mot en ekte Postgres |
 | `docs` | Arkitektur og sikkerhetskrav |
 
-## Kom i gang
+## Prøv demoen på din egen maskin
+
+Demoen har oppdiktede lokaler og gjester, og alt lagres bare i minnet. Du kan
+bytte fritt mellom å være gjest og lokale.
+
+1. Installer [Node.js 22 LTS](https://nodejs.org) og [Git](https://git-scm.com).
+2. Åpne Terminal (Mac) eller PowerShell (Windows) og kjør:
+
+   ```sh
+   corepack enable
+   git clone https://github.com/martibal/lokalanbud.git
+   cd lokalanbud
+   pnpm install
+   pnpm dev
+   ```
+
+   Svarer `corepack enable` med en feil om rettigheter på Mac, kjør
+   `sudo corepack enable` i stedet.
+
+3. Åpne <http://localhost:3000/demo> i nettleseren og velg en rolle.
+4. Stopp med Ctrl+C. For å hente siste versjon senere: `git pull` og så
+   `pnpm install` og `pnpm dev` igjen.
+
+Forslag til gjennomgang:
+
+- Som **Kari** (gjest): åpne bursdagen, åpne de to tilbudene, sammenlign dem og
+  aksepter ett.
+- Som **Bryggeloftet** (Siri): bekreft bookingen under «Våre tilbud» og se
+  avtaledokumentet.
+- Som **Kari**: legg inn et nytt behov på Grünerløkka med et må-krav.
+- Som **Bryggeloftet**: finn forespørselen, svar på kravene og send tilbud.
+- Som **Bryggeloftet** (Jonas, regnskap): se fakturagrunnlaget.
+
+Tips: bruk ett vanlig og ett privat nettleservindu for å være gjest og lokale
+samtidig. «Nullstill demoen» på rollesiden starter på nytt.
+
+## Kom i gang for utviklere
 
 Krever Node 22, pnpm 10 og Postgres 16 lokalt.
 
@@ -27,6 +63,7 @@ pnpm test          # enhetstester
 pnpm typecheck
 pnpm test:db       # databasetester, se under
 pnpm dev           # nettsiden på http://localhost:3000
+pnpm --filter @lokalbud/web test:e2e   # hele demoflyten i Chrome, mot en kjørende server
 ```
 
 Databasetestene oppretter en egen, midlertidig database for hver kjøring og
