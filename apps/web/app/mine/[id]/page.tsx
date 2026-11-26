@@ -25,11 +25,11 @@ export default async function RequestPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ feil?: string }>;
+  searchParams: Promise<{ feil?: string; ny?: string }>;
 }) {
   const guest = await requireGuest();
   const { id } = await params;
-  const { feil } = await searchParams;
+  const { feil, ny } = await searchParams;
   const request = getRequest(id);
   if (!request || request.guestId !== guest.id) notFound();
 
@@ -47,6 +47,12 @@ export default async function RequestPage({
         <Link href="/mine">Mine forespørsler</Link>
       </p>
       <ErrorNotice message={feil} />
+      {ny && (
+        <p className="notice">
+          Forespørselen er publisert. Lokalene som passer, er varslet, og du får SMS når det kommer
+          tilbud.
+        </p>
+      )}
 
       {confirmed && (
         <div className="card success">

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
+import { logout } from "@/lib/demo/actions";
 import { currentUser } from "@/lib/demo/session";
 import { getVenue } from "@/lib/demo/store";
 import "./globals.css";
@@ -37,30 +38,38 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Link href="/" className="brand">
             Lokalbud
           </Link>
-          <nav className="nav" aria-label="Hovedmeny">
-            {user?.kind === "guest" && (
-              <>
-                <Link href="/ny-foresporsel">Nytt behov</Link>
-                <Link href="/mine">Mine forespørsler</Link>
-              </>
-            )}
-            {user?.kind === "venue" && (
-              <>
-                <Link href="/lokale">Forespørsler</Link>
-                <Link href="/lokale/tilbud">Våre tilbud</Link>
-                {(user.role === "owner" || user.role === "accounting") && (
-                  <Link href="/lokale/faktura">Faktura</Link>
-                )}
-              </>
-            )}
-            <Link href="/demo" className="nav-role">
-              {user ? (venue ? `${venue.name} · ${user.name}` : user.name) : "Velg rolle"}
-            </Link>
-          </nav>
+          {user && (
+            <nav className="nav" aria-label="Hovedmeny">
+              {user.kind === "guest" && (
+                <>
+                  <Link href="/ny-foresporsel">Nytt behov</Link>
+                  <Link href="/mine">Mine forespørsler</Link>
+                </>
+              )}
+              {user.kind === "venue" && (
+                <>
+                  <Link href="/lokale">Forespørsler</Link>
+                  <Link href="/lokale/tilbud">Våre tilbud</Link>
+                  {(user.role === "owner" || user.role === "accounting") && (
+                    <Link href="/lokale/faktura">Faktura</Link>
+                  )}
+                </>
+              )}
+              <span className="nav-role">{venue ? `${venue.name} · ${user.name}` : user.name}</span>
+              <form action={logout}>
+                <button className="link-button">Logg ut</button>
+              </form>
+            </nav>
+          )}
         </header>
         <main className={user?.kind === "venue" ? "page wide" : "page"}>{children}</main>
         <footer className="site-footer">
           <p>Lokalbud formidler. Avtalen inngås mellom deg og lokalet.</p>
+          {!isProductionStage && (
+            <p>
+              <Link href="/demo">Demoverktøy</Link>: bytt rolle raskt eller nullstill dataene.
+            </p>
+          )}
         </footer>
       </body>
     </html>

@@ -38,22 +38,31 @@ bytte fritt mellom å være gjest og lokale.
    Corepack med utgåtte nøkler, som gir feilen «Cannot find matching keyid».
    Svarer kommandoene med en feil om rettigheter på Mac, sett `sudo` foran.
 
-3. Åpne <http://localhost:3000/demo> i nettleseren og velg en rolle.
+3. Åpne <http://localhost:3000> og velg «Fortsett som gjest» eller
+   «Fortsett som lokale».
 4. Stopp med Ctrl+C. For å hente siste versjon senere: `git pull` og så
    `pnpm install` og `pnpm dev` igjen.
 
+Slik logger du inn i demoen:
+
+- **Ny gjest:** fyll ut behovet, oppgi navn og et hvilket som helst norsk
+  mobilnummer. Ingen SMS sendes; koden vises på skjermen.
+- **Eksisterende gjest:** «Se forespørslene dine» med Kari (912 34 567),
+  Ola (412 34 567) eller Ingrid (900 00 001).
+- **Lokale:** «Logg inn med BankID» viser en simulert BankID der du velger
+  testperson, for eksempel Siri i Bryggeloftet.
+
 Forslag til gjennomgang:
 
-- Som **Kari** (gjest): åpne bursdagen, åpne de to tilbudene, sammenlign dem og
-  aksepter ett.
-- Som **Bryggeloftet** (Siri): bekreft bookingen under «Våre tilbud» og se
-  avtaledokumentet.
-- Som **Kari**: legg inn et nytt behov på Grünerløkka med et må-krav.
-- Som **Bryggeloftet**: finn forespørselen, svar på kravene og send tilbud.
-- Som **Bryggeloftet** (Jonas, regnskap): se fakturagrunnlaget.
+- Som **gjest**: legg inn et behov på Grünerløkka med et må-krav.
+- Som **Siri (Bryggeloftet)**: finn forespørselen, svar på kravene og send tilbud.
+- Som **Kari**: åpne bursdagen, åpne tilbudene, sammenlign og aksepter ett.
+- Som **Siri**: bekreft bookingen under «Våre tilbud» og se avtaledokumentet.
+- Som **Jonas (regnskap i Bryggeloftet)**: se fakturagrunnlaget.
 
 Tips: bruk ett vanlig og ett privat nettleservindu for å være gjest og lokale
-samtidig. «Nullstill demoen» på rollesiden starter på nytt.
+samtidig. «Demoverktøy» nederst på siden lar deg bytte rolle raskt og
+nullstille dataene.
 
 ## Kom i gang for utviklere
 

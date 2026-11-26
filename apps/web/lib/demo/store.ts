@@ -95,7 +95,10 @@ export type BillingEvent = {
 /** Lokaler som har svart «Passer ikke». Gratis, og forespørselen skjules for dem. */
 export type Decline = { requestId: string; venueId: string; reason: string; at: string };
 
+type PhoneCode = { code: string; expiresAt: number; attempts: number };
+
 type Store = {
+  phoneCodes: Map<string, PhoneCode>;
   users: DemoUser[];
   venues: Venue[];
   requests: DemoRequest[];
@@ -200,7 +203,7 @@ function seed(): Store {
     { id: "u-lindekroa", kind: "venue", name: "Lise (eier)", venueId: "v-lindekroa", role: "owner" },
   ];
 
-  const store: Store = { users, venues, requests: [], offers: [], billing: [], declines: [], referenceCounter: 0 };
+  const store: Store = { phoneCodes: new Map(), users, venues, requests: [], offers: [], billing: [], declines: [], referenceCounter: 0 };
 
   const mk = (guestId: string, daysAhead: number, input: Omit<RequestInput, "date">, hoursAgo: number) => {
     const full: RequestInput = { ...input, date: { mode: "exact", date: addDays(today, daysAhead) } };
@@ -325,6 +328,44 @@ function db(): Store {
 
 export function resetDemo(): void {
   globalStore.__lokalbudDemo = seed();
+}
+
+// ---------------------------------------------------------------------------
+// Engangskode på SMS (simulert: koden vises på skjermen i demoen)
+// ---------------------------------------------------------------------------
+
+const CODE_TTL_MS = 10 * 60_000;
+const MAX_CODE_ATTEMPTS = 5;
+
+export function startPhoneVerification(phone: string): string {
+  const code = String(Math.floor(100_000 + Math.random() * 900_000));
+  db().phoneCodes.set(phone, { code, expiresAt: Date.now() + CODE_TTL_MS, attempts: 0 });
+  return code;
+}
+
+/** Sjekker koden. Koden kan bare brukes én gang, og maks fem forsøk. */
+export function verifyPhoneCode(phone: string, code: string): void {
+  const entry = db().phoneCodes.get(phone);
+  if (!entry || entry.expiresAt < Date.now()) throw new DemoRuleError("Koden er utløpt. Be om en ny kode.");
+  entry.attempts += 1;
+  if (entry.attempts > MAX_CODE_ATTEMPTS) {
+    db().phoneCodes.delete(phone);
+    throw new DemoRuleError("For mange forsøk. Be om en ny kode.");
+  }
+  if (entry.code !== code.trim()) throw new DemoRuleError("Feil kode. Prøv igjen.");
+  db().phoneCodes.delete(phone);
+}
+
+export function findGuestByPhone(phone: string): Extract<DemoUser, { kind: "guest" }> | undefined {
+  return db().users.find((u): u is Extract<DemoUser, { kind: "guest" }> => u.kind === "guest" && u.phone === phone);
+}
+
+export function findOrCreateGuest(name: string, phone: string): Extract<DemoUser, { kind: "guest" }> {
+  const existing = findGuestByPhone(phone);
+  if (existing) return existing;
+  const guest = { id: `u-${randomUUID()}`, kind: "guest" as const, name, phone };
+  db().users.push(guest);
+  return guest;
 }
 
 // ---------------------------------------------------------------------------

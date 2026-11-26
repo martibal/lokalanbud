@@ -10,9 +10,11 @@ import {
   type FixedCriterionKey,
   type Importance,
 } from "@lokalbud/core";
+import { useRouter } from "next/navigation";
 import { useId, useMemo, useState, useTransition } from "react";
+import { sendGuestCode } from "@/lib/demo/actions";
 import { toFieldErrors, type FieldErrors } from "@/lib/form-errors";
-import { submitRequest, type SubmitResult } from "./actions";
+import { publishWithCode, submitRequest } from "./actions";
 
 type DateMode = "exact" | "flexible";
 type CustomRow = { key: number; text: string; importance: Importance };
@@ -29,38 +31,35 @@ function toInt(value: string): number {
   return cleaned === "" ? Number.NaN : Number(cleaned);
 }
 
-export function RequestForm({ today }: { today: string }) {
+export function RequestForm({ today, loggedIn }: { today: string; loggedIn: boolean }) {
   const formId = useId();
+  const router = useRouter();
+  const [areas, setAreas] = useState<AreaId[]>([]);
+  const [guestCount, setGuestCount] = useState("");
   const [eventType, setEventType] = useState("");
+  const [budget, setBudget] = useState("");
+  const [indicative, setIndicative] = useState(false);
   const [dateMode, setDateMode] = useState<DateMode>("exact");
   const [date, setDate] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [guestCount, setGuestCount] = useState("");
-  const [areas, setAreas] = useState<AreaId[]>([]);
-  const [budget, setBudget] = useState("");
-  const [indicative, setIndicative] = useState(false);
+  const [urgent, setUrgent] = useState(false);
   const [fixed, setFixed] = useState<Partial<Record<FixedCriterionKey, Importance>>>({});
   const [custom, setCustom] = useState<CustomRow[]>([]);
   const [nextKey, setNextKey] = useState(1);
-  const [urgent, setUrgent] = useState(false);
   const [description, setDescription] = useState("");
   const [attempted, setAttempted] = useState(false);
   const [serverErrors, setServerErrors] = useState<FieldErrors>({});
-  const [result, setResult] = useState<SubmitResult | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const allAreasSelected = areas.length === OSLO_AREAS.length;
+  // Steg 2: bekreft mobilnummer
+  const [step, setStep] = useState<"form" | "verify">("form");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [codeSentTo, setCodeSentTo] = useState<string>();
+  const [demoCode, setDemoCode] = useState<string>();
+  const [code, setCode] = useState("");
 
-  // Etter første forsøk valideres skjemaet fortløpende, slik at en feilmelding
-  // forsvinner så snart feltet er rettet.
-  const input = buildInput();
-  const localErrors = useMemo(() => {
-    if (!attempted) return {};
-    const check = requestInputSchema(today).safeParse(input);
-    return check.success ? {} : toFieldErrors(check.error.issues);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [attempted, today, JSON.stringify(input)]);
-  const errors: FieldErrors = { ...serverErrors, ...localErrors };
+  const allAreasSelected = areas.length === OSLO_AREAS.length;
 
   function buildInput() {
     return {
@@ -79,30 +78,67 @@ export function RequestForm({ today }: { today: string }) {
     };
   }
 
+  // Etter første forsøk valideres skjemaet fortløpende, slik at en feilmelding
+  // forsvinner så snart feltet er rettet.
+  const input = buildInput();
+  const inputKey = JSON.stringify(input);
+  const localErrors = useMemo(() => {
+    if (!attempted) return {};
+    const check = requestInputSchema(today).safeParse(JSON.parse(inputKey));
+    return check.success ? {} : toFieldErrors(check.error.issues);
+  }, [attempted, today, inputKey]);
+  const errors: FieldErrors = { ...serverErrors, ...localErrors };
+
+  function focusFirstError() {
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>("[aria-invalid='true']")?.focus();
+    });
+  }
+
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setAttempted(true);
     setServerErrors({});
     // Rask sjekk i nettleseren. Serveren sjekker alt på nytt.
-    const local = requestInputSchema(today).safeParse(input);
-    if (!local.success) {
-      setResult(null);
+    if (!requestInputSchema(today).safeParse(input).success) {
       focusFirstError();
       return;
     }
     startTransition(async () => {
       const response = await submitRequest(input);
-      if (!response.ok) {
+      if (response.ok === true) router.push(`/mine/${response.requestId}?ny=1`);
+      else if (response.ok === "needs_verification") {
+        setStep("verify");
+        window.scrollTo({ top: 0 });
+      } else {
         setServerErrors(response.errors);
         focusFirstError();
       }
-      setResult(response);
     });
   }
 
-  function focusFirstError() {
-    requestAnimationFrame(() => {
-      document.querySelector<HTMLElement>("[aria-invalid='true']")?.focus();
+  function onSendCode(event: React.FormEvent) {
+    event.preventDefault();
+    setServerErrors({});
+    if (name.trim().length < 2) return setServerErrors({ name: "Oppgi navnet ditt" });
+    startTransition(async () => {
+      const result = await sendGuestCode(phone, false);
+      if (!result.ok) return setServerErrors({ phone: result.error });
+      setCodeSentTo(result.phone);
+      setDemoCode(result.demoCode);
+    });
+  }
+
+  function onPublish(event: React.FormEvent) {
+    event.preventDefault();
+    setServerErrors({});
+    startTransition(async () => {
+      const result = await publishWithCode(input, { name, phone: codeSentTo ?? phone, code });
+      if (result.ok === true) router.push(`/mine/${result.requestId}?ny=1`);
+      else if (result.ok === false) {
+        setServerErrors(result.errors);
+        if (!("code" in result.errors) && !("name" in result.errors) && !("phone" in result.errors)) setStep("form");
+      }
     });
   }
 
@@ -126,25 +162,75 @@ export function RequestForm({ today }: { today: string }) {
   }
 
   const err = (path: string) => errors[path];
-  const fieldId = (name: string) => `${formId}-${name}`;
+  const fieldId = (n: string) => `${formId}-${n}`;
 
-  if (result?.ok) {
+  if (step === "verify") {
     return (
-      <div className="card success" role="status">
-        <h2>Forespørselen er publisert</h2>
-        <p>
-          {result.summary.guestCount} gjester, {result.summary.areaCount}{" "}
-          {result.summary.areaCount === 1 ? "område" : "områder"} og {result.summary.criteriaCount}{" "}
-          {result.summary.criteriaCount === 1 ? "krav" : "krav"}.
-          {result.urgent && " Den er merket som hastesak og varsles først."}
-        </p>
-        <p>
-          Lokalene som passer, er varslet. Du får en SMS når det kommer tilbud. I den ekte løsningen
-          bekrefter du først mobilnummeret ditt med en engangskode.
-        </p>
-        <a className="button button-primary" href={`/mine/${result.requestId}`}>
-          Se forespørselen
-        </a>
+      <div className="request-form">
+        <div className="card">
+          <h2>Bekreft mobilnummeret ditt</h2>
+          <p className="muted">
+            Lokalene ser verken navnet eller nummeret ditt før du selv aksepterer et tilbud. Vi
+            bruker nummeret til å varsle deg når det kommer tilbud.
+          </p>
+          {!codeSentTo ? (
+            <form onSubmit={onSendCode} noValidate>
+              <label htmlFor={fieldId("name")}>Navn</label>
+              <input
+                id={fieldId("name")}
+                autoComplete="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                aria-invalid={Boolean(err("name"))}
+              />
+              <FieldError message={err("name")} />
+              <label htmlFor={fieldId("phone")}>Mobilnummer</label>
+              <input
+                id={fieldId("phone")}
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="912 34 567"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                aria-invalid={Boolean(err("phone"))}
+              />
+              <FieldError message={err("phone")} />
+              <button className="button button-primary spaced" disabled={pending}>
+                {pending ? "Sender …" : "Send kode på SMS"}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={onPublish} noValidate>
+              <p>Vi har sendt en kode til {codeSentTo}.</p>
+              {demoCode && (
+                <p className="notice">
+                  Demo: ingen SMS sendes. Koden er <strong>{demoCode}</strong>.
+                </p>
+              )}
+              <label htmlFor={fieldId("code")}>Kode</label>
+              <input
+                id={fieldId("code")}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                aria-invalid={Boolean(err("code"))}
+              />
+              <FieldError message={err("code")} />
+              <button className="button button-primary spaced" disabled={pending}>
+                {pending ? "Publiserer …" : "Bekreft og publiser"}
+              </button>
+              <button type="button" className="link-button" onClick={() => setCodeSentTo(undefined)}>
+                Endre nummer
+              </button>
+            </form>
+          )}
+        </div>
+        <button type="button" className="link-button" onClick={() => setStep("form")}>
+          Tilbake til skjemaet
+        </button>
       </div>
     );
   }
@@ -154,35 +240,82 @@ export function RequestForm({ today }: { today: string }) {
       {err("_form") && <p className="form-error">{err("_form")}</p>}
 
       <fieldset>
-        <legend>Arrangement</legend>
-        <label htmlFor={fieldId("eventType")}>Type arrangement</label>
-        <select
-          id={fieldId("eventType")}
-          value={eventType}
-          onChange={(e) => setEventType(e.target.value)}
-          aria-invalid={Boolean(err("eventType"))}
-          aria-describedby={err("eventType") ? fieldId("eventType-error") : undefined}
-        >
-          <option value="">Velg …</option>
-          {EVENT_TYPES.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.label}
-            </option>
+        <legend>Hvor i Oslo?</legend>
+        <div className="area-actions">
+          <button
+            type="button"
+            className="link-button"
+            onClick={() => setAreas(allAreasSelected ? [] : OSLO_AREAS.map((a) => a.id))}
+          >
+            {allAreasSelected ? "Fjern alle" : "Velg alle"}
+          </button>
+          <span className="muted">{areas.length} valgt</span>
+        </div>
+        <div className="chips" aria-invalid={Boolean(err("areas"))} tabIndex={err("areas") ? -1 : undefined}>
+          {OSLO_AREAS.map((area) => (
+            <label key={area.id} className={areas.includes(area.id) ? "chip selected" : "chip"}>
+              <input type="checkbox" checked={areas.includes(area.id)} onChange={() => toggleArea(area.id)} />
+              {area.name}
+            </label>
           ))}
-        </select>
-        <FieldError id={fieldId("eventType-error")} message={err("eventType")} />
+        </div>
+        <FieldError message={err("areas")} />
+      </fieldset>
 
-        <label htmlFor={fieldId("guestCount")}>Antall gjester</label>
-        <input
-          id={fieldId("guestCount")}
-          inputMode="numeric"
-          autoComplete="off"
-          value={guestCount}
-          onChange={(e) => setGuestCount(e.target.value)}
-          aria-invalid={Boolean(err("guestCount"))}
-          aria-describedby={err("guestCount") ? fieldId("guestCount-error") : undefined}
-        />
-        <FieldError id={fieldId("guestCount-error")} message={err("guestCount")} />
+      <fieldset>
+        <legend>Arrangement</legend>
+        <div className="row">
+          <div>
+            <label htmlFor={fieldId("guestCount")}>Antall gjester</label>
+            <input
+              id={fieldId("guestCount")}
+              inputMode="numeric"
+              autoComplete="off"
+              value={guestCount}
+              onChange={(e) => setGuestCount(e.target.value)}
+              aria-invalid={Boolean(err("guestCount"))}
+            />
+            <FieldError message={err("guestCount")} />
+          </div>
+          <div>
+            <label htmlFor={fieldId("eventType")}>Type</label>
+            <select
+              id={fieldId("eventType")}
+              value={eventType}
+              onChange={(e) => setEventType(e.target.value)}
+              aria-invalid={Boolean(err("eventType"))}
+            >
+              <option value="">Velg …</option>
+              {EVENT_TYPES.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+            <FieldError message={err("eventType")} />
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Makspris</legend>
+        <label htmlFor={fieldId("budget")}>Totalt for hele arrangementet, med leie, mat og drikke</label>
+        <div className="suffix-input">
+          <input
+            id={fieldId("budget")}
+            inputMode="numeric"
+            autoComplete="off"
+            value={budget}
+            onChange={(e) => setBudget(e.target.value)}
+            aria-invalid={Boolean(err("budget.amountNok"))}
+          />
+          <span aria-hidden="true">kr</span>
+        </div>
+        <FieldError message={err("budget.amountNok")} />
+        <label className="check">
+          <input type="checkbox" checked={indicative} onChange={(e) => setIndicative(e.target.checked)} />
+          Prisen er veiledende, lokalene kan foreslå en annen
+        </label>
       </fieldset>
 
       <fieldset>
@@ -235,51 +368,7 @@ export function RequestForm({ today }: { today: string }) {
       </fieldset>
 
       <fieldset>
-        <legend>Område i Oslo</legend>
-        <div className="area-actions">
-          <button
-            type="button"
-            className="link-button"
-            onClick={() => setAreas(allAreasSelected ? [] : OSLO_AREAS.map((a) => a.id))}
-          >
-            {allAreasSelected ? "Fjern alle" : "Velg alle"}
-          </button>
-          <span className="muted">{areas.length} valgt</span>
-        </div>
-        <div className="chips" aria-invalid={Boolean(err("areas"))} tabIndex={err("areas") ? -1 : undefined}>
-          {OSLO_AREAS.map((area) => (
-            <label key={area.id} className={areas.includes(area.id) ? "chip selected" : "chip"}>
-              <input type="checkbox" checked={areas.includes(area.id)} onChange={() => toggleArea(area.id)} />
-              {area.name}
-            </label>
-          ))}
-        </div>
-        <FieldError message={err("areas")} />
-      </fieldset>
-
-      <fieldset>
-        <legend>Budsjett</legend>
-        <label htmlFor={fieldId("budget")}>Totalt for hele arrangementet, med leie, mat og drikke</label>
-        <div className="suffix-input">
-          <input
-            id={fieldId("budget")}
-            inputMode="numeric"
-            autoComplete="off"
-            value={budget}
-            onChange={(e) => setBudget(e.target.value)}
-            aria-invalid={Boolean(err("budget.amountNok"))}
-          />
-          <span aria-hidden="true">kr</span>
-        </div>
-        <FieldError message={err("budget.amountNok")} />
-        <label className="check">
-          <input type="checkbox" checked={indicative} onChange={(e) => setIndicative(e.target.checked)} />
-          Budsjettet er veiledende, lokalene kan foreslå en annen pris
-        </label>
-      </fieldset>
-
-      <fieldset>
-        <legend>Hva er viktig?</legend>
+        <legend>Fasiliteter og krav</legend>
         <p className="muted">Lokaler som ikke oppfyller et må-krav, kan ikke sende deg tilbud.</p>
         <ul className="criteria">
           {FIXED_CRITERIA.map((c) => {
@@ -375,7 +464,7 @@ export function RequestForm({ today }: { today: string }) {
         </p>
       )}
       <button type="submit" className="button button-primary" disabled={pending}>
-        {pending ? "Sender …" : "Fortsett"}
+        {pending ? "Sender …" : loggedIn ? "Publiser" : "Fortsett"}
       </button>
     </form>
   );

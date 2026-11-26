@@ -1,10 +1,10 @@
 "use server";
 
 import type { AnswerValue, CriterionAnswer } from "@lokalbud/core";
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { DEMO_COOKIE, requireGuest, requireVenueUser } from "./session";
+import { norwegianMobile } from "@lokalbud/core";
+import { clearSession, requireGuest, requireVenueUser, setSessionUser } from "./session";
 import * as store from "./store";
 
 function withError(path: string, error: unknown): never {
@@ -26,10 +26,54 @@ function str(form: FormData, key: string): string {
 export async function loginAs(form: FormData): Promise<void> {
   const user = store.getUser(str(form, "userId"));
   if (!user) redirect("/demo");
-  const jar = await cookies();
-  jar.set(DEMO_COOKIE, user.id, { httpOnly: true, sameSite: "lax", path: "/" });
+  await setSessionUser(user.id);
   revalidatePath("/", "layout");
   redirect(user.kind === "guest" ? "/mine" : "/lokale");
+}
+
+/** Simulert BankID: lokalets ansatt velges fra en liste over testpersoner. */
+export async function bankIdLogin(form: FormData): Promise<void> {
+  const user = store.getUser(str(form, "userId"));
+  if (!user || user.kind !== "venue") redirect("/lokale/logg-inn");
+  await setSessionUser(user.id);
+  revalidatePath("/", "layout");
+  redirect("/lokale");
+}
+
+export async function logout(): Promise<void> {
+  await clearSession();
+  revalidatePath("/", "layout");
+  redirect("/");
+}
+
+// ---------------------------------------------------------------------------
+// Engangskode på SMS for gjester
+// ---------------------------------------------------------------------------
+
+export type CodeResult = { ok: true; phone: string; demoCode: string } | { ok: false; error: string };
+
+export async function sendGuestCode(rawPhone: string, mustExist: boolean): Promise<CodeResult> {
+  const parsed = norwegianMobile.safeParse(String(rawPhone ?? ""));
+  if (!parsed.success) return { ok: false, error: "Oppgi et norsk mobilnummer med 8 siffer" };
+  if (mustExist && !store.findGuestByPhone(parsed.data)) {
+    return { ok: false, error: "Vi finner ingen forespørsler på dette nummeret" };
+  }
+  // I den ekte løsningen sendes koden på SMS og vises aldri her.
+  return { ok: true, phone: parsed.data, demoCode: store.startPhoneVerification(parsed.data) };
+}
+
+export async function guestLoginWithCode(phone: string, code: string): Promise<{ error: string } | undefined> {
+  try {
+    store.verifyPhoneCode(String(phone), String(code));
+  } catch (error) {
+    if (error instanceof store.DemoRuleError) return { error: error.message };
+    throw error;
+  }
+  const guest = store.findGuestByPhone(String(phone));
+  if (!guest) return { error: "Vi finner ingen forespørsler på dette nummeret" };
+  await setSessionUser(guest.id);
+  revalidatePath("/", "layout");
+  redirect("/mine");
 }
 
 export async function resetDemo(): Promise<void> {

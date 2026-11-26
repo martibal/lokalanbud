@@ -1,26 +1,27 @@
-import type { Metadata } from "next";
 import { todayInOslo } from "@lokalbud/core";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { currentUser } from "@/lib/demo/session";
 import { RequestForm } from "./RequestForm";
 
-export const metadata: Metadata = { title: "Legg inn behovet ditt" };
+export const metadata: Metadata = { title: "Finn lokale" };
 
 export default async function NewRequestPage() {
   const user = await currentUser();
+  const loggedIn = user?.kind === "guest";
   return (
     <>
-      {user?.kind !== "guest" && (
-        <p className="notice">
-          Du er ikke logget inn som gjest. <Link href="/demo">Velg en gjest</Link> først.
-        </p>
-      )}
       <h1>Hva trenger festen?</h1>
       <p className="lead">
-        Det tar under to minutter. Lokalene ser aldri navnet eller nummeret ditt før du selv
-        svarer på et tilbud.
+        Det tar under to minutter. Lokalene som passer, sender deg tilbud, og de ser aldri navnet
+        eller nummeret ditt før du selv aksepterer et tilbud.
       </p>
-      <RequestForm today={todayInOslo()} />
+      {!loggedIn && (
+        <p className="muted">
+          Har du allerede en forespørsel? <Link href="/logg-inn">Se forespørslene dine</Link>
+        </p>
+      )}
+      <RequestForm today={todayInOslo()} loggedIn={loggedIn} />
     </>
   );
 }

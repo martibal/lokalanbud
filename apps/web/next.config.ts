@@ -17,6 +17,8 @@ const securityHeaders = [
 const config: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  // Utviklerknappen i hjørnet bruker innebygde stiler som den strenge CSP-en blokkerer.
+  devIndicators: false,
   transpilePackages: ["@lokalbud/core"],
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

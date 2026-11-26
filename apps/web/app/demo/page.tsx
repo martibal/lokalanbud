@@ -3,7 +3,7 @@ import { loginAs, resetDemo } from "@/lib/demo/actions";
 import { currentUser } from "@/lib/demo/session";
 import { getVenue, listUsers } from "@/lib/demo/store";
 
-export const metadata: Metadata = { title: "Velg rolle" };
+export const metadata: Metadata = { title: "Demoverktøy" };
 
 const ROLE_LABELS = { owner: "eier", booking: "booking", staff: "ansatt", accounting: "regnskap" } as const;
 
@@ -16,10 +16,11 @@ export default async function DemoPage({ searchParams }: { searchParams: Promise
 
   return (
     <>
-      <h1>Velg rolle</h1>
+      <h1>Demoverktøy</h1>
       <p className="lead">
-        Bytt fritt mellom gjest og lokale for å se begge sider av samme forespørsel. Åpne gjerne
-        to nettleservinduer, ett privat, for å være begge samtidig.
+        Snarvei for å bytte rolle uten SMS-kode eller BankID, og for å nullstille dataene. Finnes
+        bare i demoen. Åpne gjerne to nettleservinduer, ett privat, for å være gjest og lokale
+        samtidig.
       </p>
       {params.nullstilt && <p className="notice">Demoen er nullstilt.</p>}
 
