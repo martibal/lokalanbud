@@ -1,12 +1,13 @@
 import { z } from "zod";
-import { AREA_IDS } from "./areas.js";
+import { AREA_IDS } from "./areas";
 import {
   CUSTOM_CRITERION_MAX_LENGTH,
   CUSTOM_CRITERION_MIN_LENGTH,
   FIXED_CRITERION_KEYS,
   MAX_CUSTOM_CRITERIA,
-} from "./criteria.js";
-import { daysBetween } from "./urgency.js";
+} from "./criteria";
+import { daysBetween } from "./urgency";
+import { formatNok } from "./format";
 
 export const EVENT_TYPES = [
   { id: "birthday", label: "Bursdag" },
@@ -31,7 +32,7 @@ export const FLEXIBLE_RANGE_MAX_DAYS = 60;
 export const MAX_DAYS_AHEAD = 730;
 export const DESCRIPTION_MAX_LENGTH = 1_000;
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Ugyldig dato");
+const isoDate = z.string().min(1, "Velg dato").regex(/^\d{4}-\d{2}-\d{2}$/, "Ugyldig dato");
 const clockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Ugyldig klokkeslett");
 const importance = z.enum(["must", "wish"]);
 
@@ -49,31 +50,41 @@ const cleanText = (min: number, max: number) =>
 export function requestInputSchema(today: string) {
   return z
     .object({
-      eventType: z.enum(EVENT_TYPE_IDS),
+      eventType: z.enum(EVENT_TYPE_IDS, "Velg type arrangement"),
       date: z.discriminatedUnion("mode", [
         z.object({ mode: z.literal("exact"), date: isoDate }),
         z.object({ mode: z.literal("flexible"), from: isoDate, to: isoDate }),
       ]),
       startTime: clockTime.optional(),
       endTime: clockTime.optional(),
-      guestCount: z.number().int().min(GUEST_COUNT_MIN).max(GUEST_COUNT_MAX),
+      guestCount: z
+        .number("Oppgi antall gjester")
+        .int("Oppgi et helt antall gjester")
+        .min(GUEST_COUNT_MIN, `Minst ${GUEST_COUNT_MIN} gjester`)
+        .max(GUEST_COUNT_MAX, `Maks ${GUEST_COUNT_MAX} gjester`),
       areas: z
-        .array(z.enum(AREA_IDS))
+        .array(z.enum(AREA_IDS, "Ukjent område"))
         .min(1, "Velg minst ett område")
         .refine((a) => new Set(a).size === a.length, "Samme område er valgt to ganger"),
       budget: z.object({
-        amountNok: z.number().int().min(BUDGET_MIN_NOK).max(BUDGET_MAX_NOK),
+        amountNok: z
+          .number("Oppgi budsjett")
+          .int("Oppgi budsjett i hele kroner")
+          .min(BUDGET_MIN_NOK, `Budsjettet må være minst ${formatNok(BUDGET_MIN_NOK)}`)
+          .max(BUDGET_MAX_NOK, "Budsjettet er for høyt"),
         indicative: z.boolean(),
       }),
       fixedCriteria: z.partialRecord(z.enum(FIXED_CRITERION_KEYS), importance),
       customCriteria: z
         .array(
           z.object({
-            text: cleanText(CUSTOM_CRITERION_MIN_LENGTH, CUSTOM_CRITERION_MAX_LENGTH),
+            text: cleanText(CUSTOM_CRITERION_MIN_LENGTH, CUSTOM_CRITERION_MAX_LENGTH).pipe(
+              z.string().min(CUSTOM_CRITERION_MIN_LENGTH, "Kravet er for kort"),
+            ),
             importance,
           }),
         )
-        .max(MAX_CUSTOM_CRITERIA),
+        .max(MAX_CUSTOM_CRITERIA, `Maks ${MAX_CUSTOM_CRITERIA} egne krav`),
       markedUrgent: z.boolean(),
       description: cleanText(0, DESCRIPTION_MAX_LENGTH).optional(),
     })

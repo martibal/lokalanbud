@@ -28,3 +28,14 @@ export function isUrgent(params: {
   const days = daysBetween(params.today, params.earliestDate);
   return days >= 0 && days <= AUTO_URGENT_WITHIN_DAYS;
 }
+
+/** Dagens dato i Oslo på formen ÅÅÅÅ-MM-DD, uavhengig av serverens tidssone. */
+export function todayInOslo(now: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Oslo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+  return parts;
+}

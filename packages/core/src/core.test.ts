@@ -10,7 +10,7 @@ import {
   offerFeeNok,
   requestInputSchema,
   type Criterion,
-} from "./index.js";
+} from "./index";
 
 describe("offerFeeNok", () => {
   it("tar 0,75 % av grunnlaget og runder halve kroner opp", () => {
@@ -186,5 +186,23 @@ describe("norwegianMobile", () => {
   it("avviser fasttelefon og utenlandske numre", () => {
     expect(norwegianMobile.safeParse("22 12 34 56").success).toBe(false);
     expect(norwegianMobile.safeParse("+46701234567").success).toBe(false);
+  });
+});
+
+describe("todayInOslo", () => {
+  it("bruker norsk tid, også rett etter midnatt", async () => {
+    const { todayInOslo } = await import("./urgency");
+    // 23:30 UTC 31. desember er 00:30 1. januar i Oslo.
+    expect(todayInOslo(new Date("2026-12-31T23:30:00Z"))).toBe("2027-01-01");
+    expect(todayInOslo(new Date("2026-07-01T21:59:00Z"))).toBe("2026-07-01");
+  });
+});
+
+describe("formatNok", () => {
+  it("bruker mellomrom som tusenskille", async () => {
+    const { formatNok } = await import("./format");
+    expect(formatNok(16200)).toBe("16 200 kr");
+    expect(formatNok(1000000)).toBe("1 000 000 kr");
+    expect(formatNok(19)).toBe("19 kr");
   });
 });
