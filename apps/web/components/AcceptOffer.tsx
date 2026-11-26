@@ -4,24 +4,21 @@ import { useState, useTransition } from "react";
 import { acceptOfferAction } from "@/lib/demo/actions";
 
 /**
- * Godta et tilbud. Gjesten oppgir kontaktinformasjon og bekrefter at
- * bestillingen er bindende. Da sendes en kopi til begge parter.
+ * Godta et tilbud. Gjesten bekrefter at bestillingen er bindende. Da deles
+ * kontaktinformasjonen med lokalet, og begge parter får en kopi.
  */
 export function AcceptOffer({
   offerId,
   venueName,
   priceText,
-  defaults,
+  contact,
 }: {
   offerId: string;
   venueName: string;
   priceText: string;
-  defaults: { name: string; phone: string; email: string };
+  contact: { name: string; phone: string; email: string };
 }) {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState(defaults.name.startsWith("Demogjest") ? "" : defaults.name);
-  const [phone, setPhone] = useState(defaults.phone);
-  const [email, setEmail] = useState(defaults.email);
   const [binding, setBinding] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
@@ -38,54 +35,31 @@ export function AcceptOffer({
     event.preventDefault();
     setErrors({});
     startTransition(async () => {
-      const result = await acceptOfferAction({ offerId, name, phone, email, binding });
+      const result = await acceptOfferAction({ offerId, binding });
       if (result?.errors) setErrors(result.errors);
     });
   }
 
   return (
-    <form className="accept-panel request-form" onSubmit={submit} noValidate>
+    <form className="accept-panel" onSubmit={submit} noValidate>
       <h3>Godta tilbudet</h3>
       <p className="hint">
-        {venueName} får navnet og kontaktinformasjonen din, og dere får begge en kopi av bestillingen på e-post.
+        {venueName} får kontaktinformasjonen din, og dere får begge en kopi av bestillingen på e-post.
       </p>
-      <div className="row">
-        <div className="field">
-          <label htmlFor={`n-${offerId}`}>Navn</label>
-          <input
-            id={`n-${offerId}`}
-            autoComplete="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            aria-invalid={Boolean(errors.name)}
-          />
-          {errors.name && <p className="field-error">{errors.name}</p>}
+      <dl className="facts">
+        <div>
+          <dt>Navn</dt>
+          <dd>{contact.name}</dd>
         </div>
-        <div className="field">
-          <label htmlFor={`p-${offerId}`}>Mobil</label>
-          <input
-            id={`p-${offerId}`}
-            type="tel"
-            autoComplete="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            aria-invalid={Boolean(errors.phone)}
-          />
-          {errors.phone && <p className="field-error">{errors.phone}</p>}
+        <div>
+          <dt>Mobil</dt>
+          <dd>{contact.phone}</dd>
         </div>
-      </div>
-      <div className="field">
-        <label htmlFor={`e-${offerId}`}>E-post</label>
-        <input
-          id={`e-${offerId}`}
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          aria-invalid={Boolean(errors.email)}
-        />
-        {errors.email && <p className="field-error">{errors.email}</p>}
-      </div>
+        <div>
+          <dt>E-post</dt>
+          <dd>{contact.email}</dd>
+        </div>
+      </dl>
       <label className="check binding">
         <input
           type="checkbox"

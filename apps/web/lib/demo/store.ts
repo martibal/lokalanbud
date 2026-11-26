@@ -263,8 +263,8 @@ function seed(): Store {
 
   const users: DemoUser[] = [
     { id: "u-kari", kind: "guest", name: "Kari Nordmann", phone: "+4791234567", email: "kari@eksempel.demo" },
-    { id: "u-ola", kind: "guest", name: "Ola Hansen", phone: "+4741234567" },
-    { id: "u-ingrid", kind: "guest", name: "Ingrid Berg", phone: "+4790000001" },
+    { id: "u-ola", kind: "guest", name: "Ola Hansen", phone: "+4741234567", email: "ola@eksempel.demo" },
+    { id: "u-ingrid", kind: "guest", name: "Ingrid Berg", phone: "+4790000001", email: "ingrid@eksempel.demo" },
     {
       id: "u-bryggeloftet",
       kind: "venue",
@@ -464,13 +464,15 @@ export function resetDemo(): void {
 // Gjester i demoen (ingen bekreftelse av mobilnummer ennå)
 // ---------------------------------------------------------------------------
 
-export function findGuestByPhone(phone: string): Extract<DemoUser, { kind: "guest" }> | undefined {
-  return db().users.find((u): u is Extract<DemoUser, { kind: "guest" }> => u.kind === "guest" && u.phone === phone);
-}
-
 export function createAnonymousGuest(): Extract<DemoUser, { kind: "guest" }> {
-  const count = db().users.filter((u) => u.kind === "guest").length;
-  const guest = { id: `u-${randomUUID()}`, kind: "guest" as const, name: `Demogjest ${count - 2}`, phone: "" };
+  const n = db().users.filter((u) => u.kind === "guest").length - 2;
+  const guest = {
+    id: `u-${randomUUID()}`,
+    kind: "guest" as const,
+    name: `Demogjest ${n}`,
+    phone: `+479000${String(1000 + n).slice(-4)}`,
+    email: `demogjest${n}@eksempel.demo`,
+  };
   db().users.push(guest);
   return guest;
 }
@@ -571,14 +573,12 @@ export function openOffer(guestId: string, offerId: string): BillingEvent {
   return event;
 }
 
-export type GuestContact = { name: string; phone: string; email: string };
-
 /**
  * Gjesten godtar tilbudet. Det er bindende for begge parter med en gang:
  * lokalet har lovet å holde datoen av så lenge tilbudet er gyldig.
  * En kopi av bestillingen sendes til gjesten og til kontaktpersonen hos lokalet.
  */
-export function acceptOffer(guestId: string, offerId: string, contact: GuestContact): DemoOffer {
+export function acceptOffer(guestId: string, offerId: string): DemoOffer {
   const { offer, request } = guestOffer(guestId, offerId);
   if (request.status !== "open") throw new DemoRuleError("Forespørselen er allerede booket eller avsluttet");
   if (offer.status !== "active") throw new DemoRuleError("Tilbudet kan ikke godtas lenger");
@@ -588,11 +588,8 @@ export function acceptOffer(guestId: string, offerId: string, contact: GuestCont
 
   const store = db();
   const guest = store.users.find((u) => u.id === guestId);
-  if (guest?.kind === "guest") {
-    guest.name = contact.name;
-    guest.phone = contact.phone;
-    guest.email = contact.email;
-  }
+  if (guest?.kind !== "guest") throw new DemoRuleError("Ingen tilgang");
+  const contact = { name: guest.name, phone: guest.phone, email: guest.email ?? "" };
 
   store.referenceCounter += 1;
   offer.status = "confirmed";

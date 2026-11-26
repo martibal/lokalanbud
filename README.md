@@ -45,11 +45,11 @@ bytte fritt mellom å være gjest og lokale.
 
 Slik logger du inn i demoen:
 
-- **Ny gjest:** fyll ut behovet og trykk «Publiser forespørselen». Den
-  publiseres med en gang, uten mobilnummer, og vises straks hos lokalene.
-  Nettleseren husker deg som gjest.
-- **Eksisterende gjest:** «Se forespørslene dine» med mobilnummeret til Kari
-  (912 34 567), Ola (412 34 567) eller Ingrid (900 00 001). Ingen kode i demoen.
+- **Ny gjest:** fyll ut behovet og trykk «Publiser forespørselen». Du blir
+  en demogjest med oppdiktet kontaktinformasjon, og forespørselen vises
+  straks hos lokalene. Ingen mobilnummer eller innlogging.
+- **Eksisterende gjest:** «Se forespørslene dine» og velg Kari, Ola eller
+  Ingrid.
 - **Lokale:** «Logg inn med BankID» viser en simulert BankID der du velger
   testperson, for eksempel Siri i Bryggeloftet.
 

@@ -17,7 +17,7 @@ export default async function NewRequestPage() {
       </p>
       {user?.kind !== "guest" && (
         <p className="muted small">
-          Har du allerede lagt inn et behov? <Link href="/logg-inn">Se forespørslene dine</Link>
+          Vil du se en demogjest som allerede har fått tilbud? <Link href="/logg-inn">Se forespørslene dine</Link>
         </p>
       )}
       <RequestForm today={todayInOslo()} />

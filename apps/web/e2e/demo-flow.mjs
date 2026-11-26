@@ -40,11 +40,10 @@ async function loginVenue(name) {
   await page.waitForURL((u) => u.pathname === "/lokale");
 }
 
-async function loginGuest(phone) {
+async function loginGuest(name) {
   await logout();
   await page.goto(B + "/logg-inn");
-  await page.fill("#phone", phone);
-  await page.click("button:has-text('Se forespørslene')");
+  await page.locator("button.role-card", { hasText: name }).click();
   await page.waitForURL((u) => u.pathname === "/mine");
 }
 
@@ -116,7 +115,7 @@ await page.waitForURL(/tilbud\?sendt/);
 step("tilbud sendt");
 
 // 4. Kari logger inn, ser tilbudene, sammenligner og godtar ett. Det er bindende med en gang.
-await loginGuest("91234567");
+await loginGuest("Kari");
 await page.locator(".list-item", { hasText: "Bursdag" }).click();
 await page.waitForSelector(".offer.teaser");
 await page.locator(".offer.teaser button").first().click();
@@ -132,9 +131,8 @@ await shot("06-tilbud-gjest");
 const bryggeloftet = page.locator(".offer-full", { hasText: "Bryggeloftet" });
 await bryggeloftet.locator("button", { hasText: "Godta tilbudet" }).click();
 await bryggeloftet.locator("button", { hasText: "Godta og bestill" }).click();
-await page.waitForSelector("text=Bekreft at du forstår");
+await page.waitForSelector("text=Kryss av for at du forstår");
 step("bindende godkjenning må krysses av");
-await bryggeloftet.locator("input[type=email]").fill("kari@eksempel.demo");
 await bryggeloftet.locator(".binding input").check();
 await bryggeloftet.locator("button", { hasText: "Godta og bestill" }).click();
 await page.waitForURL(/avtale\/.+\?ny=1/);
@@ -158,15 +156,28 @@ await guestPage.locator(".offer.teaser button").first().click();
 await guestPage.waitForSelector(".offer-price");
 step("nytt tilbud åpnet: " + (await guestPage.locator(".offer-price").first().innerText()));
 
-// Lokalet trekker tilbudet, og gjesten ser det ikke lenger
-await loginVenue("Siri");
-await page.goto(B + "/lokale/tilbud");
+// Den nye demogjesten godtar tilbudet. Hele flyten fra bestilling til aksept uten noen innlogging.
+const fresh = guestPage.locator(".offer-full").first();
+await fresh.locator("button", { hasText: "Godta tilbudet" }).click();
+await fresh.locator(".binding input").check();
+await fresh.locator("button", { hasText: "Godta og bestill" }).click();
+await guestPage.waitForURL(/avtale\/.+\?ny=1/);
+step("demogjesten booket: " + (await guestPage.locator(".agreement .reference").innerText()));
+
+// Et lokale sender og trekker et tilbud, og gjesten ser det ikke lenger
+await loginVenue("Amir");
+await page.locator(".request-card", { hasText: "Firmafest" }).click();
+await page.click("button:has-text('Alt er oppfylt')");
+await page.fill("#pris", "38000");
+await page.fill("#inkludert", "Middag og lokale hele kvelden");
+await page.click("button[type=submit]");
+await page.waitForURL(/tilbud\?sendt/);
 await page.click(".offer.active >> text=Trekk tilbudet");
 await page.waitForSelector("text=Avsluttede tilbud");
-step("tilbud trukket");
-await guestPage.reload();
-if ((await guestPage.locator(".offer-full").count()) !== 0) problems.push("trukket tilbud vises fortsatt for gjesten");
-step("trukket tilbud er borte hos gjesten");
+await loginGuest("Ola");
+await page.locator(".list-item", { hasText: "Firmafest" }).click();
+if ((await page.locator(".offer").count()) !== 0) problems.push("trukket tilbud vises fortsatt for gjesten");
+step("trukket tilbud vises ikke for gjesten");
 
 // 7. Tilganger: regnskap ser faktura, booking gjør ikke
 await loginVenue("Jonas");
@@ -194,6 +205,13 @@ step("lagret søk: " + (await page.locator(".list h2").allInnerTexts()).join(", 
 await page.click("text=Vis treff");
 await page.waitForURL(/sok=/);
 step("treff i lagret søk: " + (await page.locator(".request-card").count()));
+
+// Ingen steder ber om mobilnummer i demoen
+for (const path of ["/ny-foresporsel", "/logg-inn"]) {
+  await page.goto(B + path);
+  if ((await page.locator("input[type=tel]").count()) > 0) problems.push(`${path} ber om mobilnummer`);
+}
+step("ingen mobilregistrering i flyten");
 
 // 8. Sider som krever innlogging, sender videre til riktig innlogging
 await logout();

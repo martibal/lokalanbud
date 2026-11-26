@@ -19,8 +19,8 @@ export default async function DemoPage({ searchParams }: { searchParams: Promise
     <>
       <h1>Demoverktøy</h1>
       <p className="lead">
-        Snarvei for å bytte rolle uten SMS-kode eller BankID, og for å nullstille dataene. Finnes bare i demoen. Åpne
-        gjerne to nettleservinduer, ett privat, for å være gjest og lokale samtidig.
+        Snarvei for å bytte rolle uten innlogging, og for å nullstille dataene. Finnes bare i demoen. Åpne gjerne to
+        nettleservinduer, ett privat, for å være gjest og lokale samtidig.
       </p>
       {params.nullstilt && <p className="notice">Demoen er nullstilt.</p>}
 

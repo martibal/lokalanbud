@@ -42,7 +42,11 @@ export default async function RequestPage({
   const earlier = all.filter((o) => o.status === "superseded");
   const opened = current.filter((o) => billingOpened(o.id));
   const canAccept = request.status === "open";
-  const contactDefaults = { name: guest.name, phone: guest.phone.replace(/^\+47/, ""), email: guest.email ?? "" };
+  const contactDefaults = {
+    name: guest.name,
+    phone: guest.phone.replace(/^\+47(\d{3})(\d{2})(\d{3})$/, "$1 $2 $3"),
+    email: guest.email ?? "",
+  };
 
   return (
     <>
@@ -249,7 +253,7 @@ function OfferCard({
           offerId={offer.id}
           venueName={venue.name}
           priceText={formatNok(version.totalPriceNok)}
-          defaults={contactDefaults}
+          contact={contactDefaults}
         />
       )}
       {offer.status === "confirmed" && <p className="badge good">Booket</p>}

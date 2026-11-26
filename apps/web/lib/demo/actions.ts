@@ -3,7 +3,6 @@
 import type { AnswerValue, CriterionAnswer } from "@lokalbud/core";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { norwegianMobile } from "@lokalbud/core";
 import { clearSession, requireGuest, requireVenueUser, setSessionUser } from "./session";
 import * as store from "./store";
 
@@ -46,20 +45,6 @@ export async function logout(): Promise<void> {
   redirect("/");
 }
 
-// ---------------------------------------------------------------------------
-// Gjesten logger inn igjen med mobilnummeret (uten SMS-kode i demoen)
-// ---------------------------------------------------------------------------
-
-export async function guestLoginByPhone(rawPhone: string): Promise<{ error: string } | undefined> {
-  const parsed = norwegianMobile.safeParse(String(rawPhone ?? ""));
-  if (!parsed.success) return { error: "Oppgi et norsk mobilnummer med 8 siffer" };
-  const guest = store.findGuestByPhone(parsed.data);
-  if (!guest) return { error: "Vi finner ingen forespørsler på dette nummeret" };
-  await setSessionUser(guest.id);
-  revalidatePath("/", "layout");
-  redirect("/mine");
-}
-
 export async function resetDemo(): Promise<void> {
   store.resetDemo();
   revalidatePath("/", "layout");
@@ -83,24 +68,16 @@ export async function openOfferAction(form: FormData): Promise<void> {
   redirect(`/mine/${requestId}`);
 }
 
-export type AcceptInput = { offerId: string; name: string; phone: string; email: string; binding: boolean };
-
 /** Gjesten godtar et tilbud. Bindende med en gang, og en kopi sendes til begge parter. */
-export async function acceptOfferAction(input: AcceptInput): Promise<{ errors: Record<string, string> } | undefined> {
+export async function acceptOfferAction(input: {
+  offerId: string;
+  binding: boolean;
+}): Promise<{ errors: Record<string, string> } | undefined> {
   const guest = await requireGuest();
-  const errors: Record<string, string> = {};
-  const name = String(input?.name ?? "").trim();
-  if (name.length < 2 || name.length > 80) errors.name = "Oppgi navnet ditt";
-  const phone = norwegianMobile.safeParse(String(input?.phone ?? ""));
-  if (!phone.success) errors.phone = "Oppgi et norsk mobilnummer med 8 siffer";
-  const email = String(input?.email ?? "").trim();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 120) errors.email = "Oppgi en gyldig e-postadresse";
-  if (input?.binding !== true) errors.binding = "Bekreft at du forstår at bestillingen er bindende";
-  if (Object.keys(errors).length > 0) return { errors };
-
+  if (input?.binding !== true) return { errors: { binding: "Kryss av for at du forstår at bestillingen er bindende" } };
   let offerId: string;
   try {
-    offerId = store.acceptOffer(guest.id, String(input.offerId), { name, phone: phone.data!, email }).id;
+    offerId = store.acceptOffer(guest.id, String(input.offerId)).id;
   } catch (error) {
     if (error instanceof store.DemoRuleError) return { errors: { _form: error.message } };
     throw error;
