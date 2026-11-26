@@ -102,19 +102,20 @@ await shot("04-lokale-oversikt");
 await page.locator(".request-card", { hasText: "Jubileum" }).click();
 await page.locator("li:has-text('Garderobe') label:has-text('Ikke oppfylt')").click();
 step("må-krav blokkerer: " + (await page.locator("button[type=submit]").isDisabled()));
-await page.locator("li:has-text('Garderobe') label:has-text('Oppfylt') >> nth=0").click();
+await page.click("button:has-text('Alt er oppfylt')");
 await page.locator("li:has-text('rullestol') label:has-text('Med forbehold')").click();
 await page.fill("#pris", "18 500");
 await page.fill("#inkludert", "Leie fra 18 til 01, bord, stoler og lydanlegg");
 await page.click("button[type=submit]");
-await page.waitForSelector(".form-error");
-step("forklaring kreves: " + (await page.locator(".form-error").innerText()));
+await page.waitForSelector("text=Forklar avviket kort");
+step("forklaring kreves ved avvik");
 await page.fill("input[placeholder^='Forklar']", "Rampe ved bakinngangen");
+await shot("05-svarskjema");
 await page.click("button[type=submit]");
 await page.waitForURL(/tilbud\?sendt/);
 step("tilbud sendt");
 
-// 4. Kari logger inn med mobilnummer, åpner og sammenligner tilbud og aksepterer
+// 4. Kari logger inn, ser tilbudene, sammenligner og godtar ett. Det er bindende med en gang.
 await loginGuest("91234567");
 await page.locator(".list-item", { hasText: "Bursdag" }).click();
 await page.waitForSelector(".offer.teaser");
@@ -122,26 +123,50 @@ await page.locator(".offer.teaser button").first().click();
 await page.locator(".offer.teaser").nth(1).waitFor({ state: "detached" });
 await page.locator(".offer.teaser button").first().click();
 await page.waitForSelector(".comparison");
-await shot("05-sammenlign");
-step("to tilbud åpnet og sammenlignet");
-await page.locator(".offer", { hasText: "Bryggeloftet" }).locator("button", { hasText: "Aksepter" }).click();
-await page.waitForSelector(".notice-card h2");
-step("akseptert: " + (await page.locator(".notice-card h2").innerText()));
+const galleries = await page.locator(".gallery-main").count();
+const contacts = await page.locator(".contact-card").count();
+if (galleries < 2 || contacts < 2) problems.push("åpnede tilbud mangler bilder eller kontaktperson");
+step(`to tilbud åpnet med bilder (${galleries}) og kontaktperson (${contacts})`);
+await page.locator(".offer-full", { hasText: "Bryggeloftet" }).locator(".gallery-thumbs button").nth(1).click();
+await shot("06-tilbud-gjest");
+const bryggeloftet = page.locator(".offer-full", { hasText: "Bryggeloftet" });
+await bryggeloftet.locator("button", { hasText: "Godta tilbudet" }).click();
+await bryggeloftet.locator("button", { hasText: "Godta og bestill" }).click();
+await page.waitForSelector("text=Bekreft at du forstår");
+step("bindende godkjenning må krysses av");
+await bryggeloftet.locator("input[type=email]").fill("kari@eksempel.demo");
+await bryggeloftet.locator(".binding input").check();
+await bryggeloftet.locator("button", { hasText: "Godta og bestill" }).click();
+await page.waitForURL(/avtale\/.+\?ny=1/);
+await shot("07-bestilling");
+step("bestilling: " + (await page.locator(".agreement .reference").innerText()));
+step("kopi sendt: " + (await page.locator(".card.success p").innerText()));
 
-// 5. Lokalet bekrefter, og avtaledokumentet lages
+// 5. Lokalet ser bookingen med gjestens kontaktinformasjon, og kan trekke andre tilbud
 await loginVenue("Siri");
 await page.goto(B + "/lokale/tilbud");
-await page.click("text=Bekreft booking");
-await page.waitForURL(/avtale/);
-await shot("06-avtale");
-step("avtale: " + (await page.locator(".agreement h1").innerText()));
+const bookedText = await page.locator(".offer.confirmed").first().innerText();
+if (!bookedText.includes("Kari Nordmann")) problems.push("lokalet ser ikke gjestens kontaktinformasjon");
+step("lokalet ser bookingen med kontaktinformasjon");
+await page.goto(B + "/demo");
+step("e-postkopier i demoverktøyet: " + (await page.locator(".outbox li").count()));
 
 // 6. Den nye gjesten åpner tilbudet sitt i sitt eget vindu
 await guestPage.goto(B + "/mine");
 await guestPage.locator(".list-item").first().click();
 await guestPage.locator(".offer.teaser button").first().click();
-await guestPage.waitForSelector(".offer .price");
-step("nytt tilbud åpnet: " + (await guestPage.locator(".offer .price").first().innerText()));
+await guestPage.waitForSelector(".offer-price");
+step("nytt tilbud åpnet: " + (await guestPage.locator(".offer-price").first().innerText()));
+
+// Lokalet trekker tilbudet, og gjesten ser det ikke lenger
+await loginVenue("Siri");
+await page.goto(B + "/lokale/tilbud");
+await page.click(".offer.active >> text=Trekk tilbudet");
+await page.waitForSelector("text=Avsluttede tilbud");
+step("tilbud trukket");
+await guestPage.reload();
+if ((await guestPage.locator(".offer-full").count()) !== 0) problems.push("trukket tilbud vises fortsatt for gjesten");
+step("trukket tilbud er borte hos gjesten");
 
 // 7. Tilganger: regnskap ser faktura, booking gjør ikke
 await loginVenue("Jonas");

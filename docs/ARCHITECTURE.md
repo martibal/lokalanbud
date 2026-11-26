@@ -43,6 +43,15 @@ informasjonskapsel. Det bruker de samme reglene fra `packages/core` som den ekte
 løsningen, men erstatter innlogging og database. Det fjernes eller slås av før
 produksjon, og skal byttes ut med kall til databasefunksjonene i `db/migrations`.
 
+## Endring etter konseptnotat 4.3
+
+Gjesten godtar et tilbud, og det er bindende med en gang. Lokalet bekrefter
+ikke i et eget steg. I stedet setter lokalet en frist for hvor lenge tilbudet
+gjelder, og holder datoen av til da. Lokalet kan trekke et tilbud som ikke er
+godtatt. En kopi av bestillingen sendes til gjesten og kontaktpersonen hos
+lokalet. Demoen har dette; databasefunksjonene i `db/migrations` må oppdateres
+tilsvarende (gyldighetsfrist, `accept_offer`, `withdraw_offer` og utsending).
+
 ## Gjenstår
 
 - Kobling mellom nettsiden og Supabase, og SMS-bekreftelse for gjester.

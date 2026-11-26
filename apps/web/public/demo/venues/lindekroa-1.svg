@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-label="Illustrasjon av lindekroa">
+<rect width="1200" height="800" fill="#5b2a22"/>
+<rect y="486" width="1200" height="314" fill="#4a3324"/>
+<rect x="87" y="120" width="170" height="230" rx="8" fill="#ffffff" opacity="0.18"/>
+<line x1="172" y1="120" x2="172" y2="350" stroke="#3b1d17" stroke-width="8"/>
+<rect x="365" y="120" width="170" height="230" rx="8" fill="#ffffff" opacity="0.18"/>
+<line x1="450" y1="120" x2="450" y2="350" stroke="#3b1d17" stroke-width="8"/>
+<rect x="699" y="120" width="170" height="230" rx="8" fill="#ffffff" opacity="0.18"/>
+<line x1="784" y1="120" x2="784" y2="350" stroke="#3b1d17" stroke-width="8"/>
+<rect x="-40" y="0" width="34" height="486" fill="#3b1d17" opacity="0.55"/>
+<rect x="180" y="0" width="34" height="486" fill="#3b1d17" opacity="0.55"/>
+<rect x="400" y="0" width="34" height="486" fill="#3b1d17" opacity="0.55"/>
+<rect x="620" y="0" width="34" height="486" fill="#3b1d17" opacity="0.55"/>
+<rect x="840" y="0" width="34" height="486" fill="#3b1d17" opacity="0.55"/>
+<rect x="1060" y="0" width="34" height="486" fill="#3b1d17" opacity="0.55"/>
+<polyline points="0,40 100,70 200,40 300,70 400,40 500,70 600,40 700,70 800,40 900,70 1000,40 1100,70 1200,40" fill="none" stroke="#222" stroke-width="2"/>
+<circle cx="0" cy="50" r="9" fill="#f0a04b"/>
+<circle cx="50" cy="65" r="9" fill="#f0a04b"/>
+<circle cx="100" cy="80" r="9" fill="#f0a04b"/>
+<circle cx="150" cy="65" r="9" fill="#f0a04b"/>
+<circle cx="200" cy="50" r="9" fill="#f0a04b"/>
+<circle cx="250" cy="65" r="9" fill="#f0a04b"/>
+<circle cx="300" cy="80" r="9" fill="#f0a04b"/>
+<circle cx="350" cy="65" r="9" fill="#f0a04b"/>
+<circle cx="400" cy="50" r="9" fill="#f0a04b"/>
+<circle cx="450" cy="65" r="9" fill="#f0a04b"/>
+<circle cx="500" cy="80" r="9" fill="#f0a04b"/>
+<circle cx="550" cy="65" r="9" fill="#f0a04b"/>
+<circle cx="600" cy="50" r="9" fill="#f0a04b"/>
+<circle cx="650" cy="65" r="9" fill="#f0a04b"/>
+<circle cx="700" cy="80" r="9" fill="#f0a04b"/>
+<circle cx="750" cy="65" r="9" fill="#f0a04b"/>
+<circle cx="800" cy="50" r="9" fill="#f0a04b"/>
+<circle cx="850" cy="65" r="9" fill="#f0a04b"/>
+<circle cx="900" cy="80" r="9" fill="#f0a04b"/>
+<circle cx="950" cy="65" r="9" fill="#f0a04b"/>
+<circle cx="1000" cy="50" r="9" fill="#f0a04b"/>
+<circle cx="1050" cy="65" r="9" fill="#f0a04b"/>
+<circle cx="1100" cy="80" r="9" fill="#f0a04b"/>
+<circle cx="1150" cy="65" r="9" fill="#f0a04b"/>
+<circle cx="1200" cy="50" r="9" fill="#f0a04b"/>
+<rect x="106.0" y="534.8" width="118.99999999999999" height="22.4" rx="4" fill="#f4f1ea"/>
+<rect x="116.0" y="558.6" width="16.799999999999997" height="23.799999999999997" rx="5" fill="#3b1d17"/>
+<rect x="155.66666666666666" y="558.6" width="16.799999999999997" height="23.799999999999997" rx="5" fill="#3b1d17"/>
+<rect x="195.33333333333331" y="558.6" width="16.799999999999997" height="23.799999999999997" rx="5" fill="#3b1d17"/>
+<circle cx="165.5" cy="542" r="4.199999999999999" fill="#f0a04b"/>
+<rect x="363.0" y="534.8" width="118.99999999999999" height="22.4" rx="4" fill="#f4f1ea"/>
+<rect x="373.0" y="558.6" width="16.799999999999997" height="23.799999999999997" rx="5" fill="#3b1d17"/>
+<rect x="412.6666666666667" y="558.6" width="16.799999999999997" height="23.799999999999997" rx="5" fill="#3b1d17"/>
+<rect x="452.3333333333333" y="558.6" width="16.799999999999997" height="23.799999999999997" rx="5" fill="#3b1d17"/>
+<circle cx="422.5" cy="542" r="4.199999999999999" fill="#f0a04b"/>
+<rect x="602.0" y="534.8" width="118.99999999999999" height="22.4" rx="4" fill="#f4f1ea"/>
+<rect x="612.0" y="558.6" width="16.799999999999997" height="23.799999999999997" rx="5" fill="#3b1d17"/>
+<rect x="651.6666666666666" y="558.6" width="16.799999999999997" height="23.799999999999997" rx="5" fill="#3b1d17"/>
+<rect x="691.3333333333334" y="558.6" width="16.799999999999997" height="23.799999999999997" rx="5" fill="#3b1d17"/>
+<circle cx="661.5" cy="542" r="4.199999999999999" fill="#f0a04b"/>
+<rect x="847.0" y="534.8" width="118.99999999999999" height="22.4" rx="4" fill="#f4f1ea"/>
+<rect x="857.0" y="558.6" width="16.799999999999997" height="23.799999999999997" rx="5" fill="#3b1d17"/>
+<rect x="896.6666666666666" y="558.6" width="16.799999999999997" height="23.799999999999997" rx="5" fill="#3b1d17"/>
+<rect x="936.3333333333334" y="558.6" width="16.799999999999997" height="23.799999999999997" rx="5" fill="#3b1d17"/>
+<circle cx="906.5" cy="542" r="4.199999999999999" fill="#f0a04b"/>
+<rect x="100.0" y="625.8" width="161.5" height="30.4" rx="4" fill="#f4f1ea"/>
+<rect x="110.0" y="658.1" width="22.799999999999997" height="32.3" rx="5" fill="#3b1d17"/>
+<rect x="163.83333333333334" y="658.1" width="22.799999999999997" height="32.3" rx="5" fill="#3b1d17"/>
+<rect x="217.66666666666669" y="658.1" width="22.799999999999997" height="32.3" rx="5" fill="#3b1d17"/>
+<circle cx="180.75" cy="637" r="5.699999999999999" fill="#f0a04b"/>
+<rect x="358.0" y="625.8" width="161.5" height="30.4" rx="4" fill="#f4f1ea"/>
+<rect x="368.0" y="658.1" width="22.799999999999997" height="32.3" rx="5" fill="#3b1d17"/>
+<rect x="421.8333333333333" y="658.1" width="22.799999999999997" height="32.3" rx="5" fill="#3b1d17"/>
+<rect x="475.6666666666667" y="658.1" width="22.799999999999997" height="32.3" rx="5" fill="#3b1d17"/>
+<circle cx="438.75" cy="637" r="5.699999999999999" fill="#f0a04b"/>
+<rect x="594.0" y="625.8" width="161.5" height="30.4" rx="4" fill="#f4f1ea"/>
+<rect x="604.0" y="658.1" width="22.799999999999997" height="32.3" rx="5" fill="#3b1d17"/>
+<rect x="657.8333333333334" y="658.1" width="22.799999999999997" height="32.3" rx="5" fill="#3b1d17"/>
+<rect x="711.6666666666666" y="658.1" width="22.799999999999997" height="32.3" rx="5" fill="#3b1d17"/>
+<circle cx="674.75" cy="637" r="5.699999999999999" fill="#f0a04b"/>
+<rect x="837.0" y="625.8" width="161.5" height="30.4" rx="4" fill="#f4f1ea"/>
+<rect x="847.0" y="658.1" width="22.799999999999997" height="32.3" rx="5" fill="#3b1d17"/>
+<rect x="900.8333333333334" y="658.1" width="22.799999999999997" height="32.3" rx="5" fill="#3b1d17"/>
+<rect x="954.6666666666666" y="658.1" width="22.799999999999997" height="32.3" rx="5" fill="#3b1d17"/>
+<circle cx="917.75" cy="637" r="5.699999999999999" fill="#f0a04b"/>
+<rect x="990" y="746" width="190" height="34" rx="17" fill="#000" opacity="0.45"/>
+<text x="1085" y="769" font-family="sans-serif" font-size="18" fill="#fff" text-anchor="middle">Illustrasjon</text>
+</svg>

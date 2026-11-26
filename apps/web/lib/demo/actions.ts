@@ -83,16 +83,30 @@ export async function openOfferAction(form: FormData): Promise<void> {
   redirect(`/mine/${requestId}`);
 }
 
-export async function acceptOfferAction(form: FormData): Promise<void> {
+export type AcceptInput = { offerId: string; name: string; phone: string; email: string; binding: boolean };
+
+/** Gjesten godtar et tilbud. Bindende med en gang, og en kopi sendes til begge parter. */
+export async function acceptOfferAction(input: AcceptInput): Promise<{ errors: Record<string, string> } | undefined> {
   const guest = await requireGuest();
-  const requestId = str(form, "requestId");
+  const errors: Record<string, string> = {};
+  const name = String(input?.name ?? "").trim();
+  if (name.length < 2 || name.length > 80) errors.name = "Oppgi navnet ditt";
+  const phone = norwegianMobile.safeParse(String(input?.phone ?? ""));
+  if (!phone.success) errors.phone = "Oppgi et norsk mobilnummer med 8 siffer";
+  const email = String(input?.email ?? "").trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 120) errors.email = "Oppgi en gyldig e-postadresse";
+  if (input?.binding !== true) errors.binding = "Bekreft at du forstår at bestillingen er bindende";
+  if (Object.keys(errors).length > 0) return { errors };
+
+  let offerId: string;
   try {
-    store.acceptOffer(guest.id, str(form, "offerId"));
+    offerId = store.acceptOffer(guest.id, String(input.offerId), { name, phone: phone.data!, email }).id;
   } catch (error) {
-    withError(`/mine/${requestId}`, error);
+    if (error instanceof store.DemoRuleError) return { errors: { _form: error.message } };
+    throw error;
   }
   revalidatePath("/", "layout");
-  redirect(`/mine/${requestId}`);
+  redirect(`/avtale/${offerId}?ny=1`);
 }
 
 export async function newRoundAction(form: FormData): Promise<void> {
@@ -128,6 +142,7 @@ export type OfferFormInput = {
   totalPriceNok: number;
   conditions: string;
   cancellationTerms: string;
+  validUntil: string;
   answers: { criterionId: string; value: AnswerValue; comment: string }[];
 };
 
@@ -147,6 +162,7 @@ export async function submitOfferAction(input: OfferFormInput): Promise<{ error:
       cancellationTerms: String(input.cancellationTerms ?? "")
         .trim()
         .slice(0, 1000),
+      validUntil: String(input.validUntil ?? ""),
       answers,
     });
   } catch (error) {
@@ -164,22 +180,10 @@ export async function declineAction(form: FormData): Promise<void> {
   redirect("/lokale?avslatt=1");
 }
 
-export async function confirmBookingAction(form: FormData): Promise<void> {
-  const user = await requireVenueUser();
-  const offerId = str(form, "offerId");
-  try {
-    store.confirmBooking(user.id, offerId);
-  } catch (error) {
-    withError("/lokale/tilbud", error);
-  }
-  revalidatePath("/", "layout");
-  redirect(`/avtale/${offerId}`);
-}
-
-export async function rejectAcceptedAction(form: FormData): Promise<void> {
+export async function withdrawOfferAction(form: FormData): Promise<void> {
   const user = await requireVenueUser();
   try {
-    store.rejectAcceptedOffer(user.id, str(form, "offerId"));
+    store.withdrawOffer(user.id, str(form, "offerId"));
   } catch (error) {
     withError("/lokale/tilbud", error);
   }

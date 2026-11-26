@@ -39,7 +39,7 @@ export default async function VenueOverviewPage({ searchParams }: { searchParams
     open: visible.length,
     fitting: visible.filter((r) => fitsVenue(r, venue)).length,
     newToday: visible.filter((r) => Date.parse(r.request.createdAt) > dayAgo).length,
-    offersOut: venueOffers(user.id).filter((o) => o.status === "active" || o.status === "accepted").length,
+    offersOut: venueOffers(user.id).filter((o) => o.status === "active").length,
   };
   const query = filtersToQuery(filters);
 

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { loginAs, resetDemo } from "@/lib/demo/actions";
 import { currentUser } from "@/lib/demo/session";
-import { getVenue, listUsers } from "@/lib/demo/store";
+import { allOutbox, getVenue, listUsers } from "@/lib/demo/store";
+import { formatDateTime } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Demoverktøy" };
 
@@ -50,6 +51,24 @@ export default async function DemoPage({ searchParams }: { searchParams: Promise
           </form>
         ))}
       </div>
+
+      <h2>Sendt e-post</h2>
+      <p className="muted">Kopier av bestillinger som ville blitt sendt på e-post. Demoen sender ingenting.</p>
+      {allOutbox().length === 0 ? (
+        <p className="muted">Ingen ennå. Godta et tilbud som gjest, så dukker kopiene opp her.</p>
+      ) : (
+        <ul className="list outbox">
+          {allOutbox().map((m) => (
+            <li key={m.id} className="card">
+              <strong>{m.subject}</strong>
+              <p className="muted small">
+                Til {m.toName} ({m.to}), {formatDateTime(m.sentAt)}
+              </p>
+              <pre>{m.body}</pre>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <form action={resetDemo} className="reset">
         <button className="link-button">Nullstill demoen</button>

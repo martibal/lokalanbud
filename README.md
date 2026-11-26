@@ -57,8 +57,10 @@ Forslag til gjennomgang:
 
 - Som **gjest**: legg inn et behov på Grünerløkka med et må-krav.
 - Som **Siri (Bryggeloftet)**: finn forespørselen, svar på kravene og send tilbud.
-- Som **Kari**: åpne bursdagen, åpne tilbudene, sammenlign og aksepter ett.
-- Som **Siri**: bekreft bookingen under «Våre tilbud» og se avtaledokumentet.
+- Som **Kari**: åpne bursdagen, se tilbudene med bilder og kontaktperson,
+  sammenlign og godta ett. Det er bindende med en gang, og en kopi av
+  bestillingen sendes til begge (i demoen vises kopiene under Demoverktøy).
+- Som **Siri**: se bookingen med gjestens kontaktinformasjon under «Våre tilbud».
 - Som **Jonas (regnskap i Bryggeloftet)**: se fakturagrunnlaget.
 
 Tips: bruk ett vanlig og ett privat nettleservindu for å være gjest og lokale

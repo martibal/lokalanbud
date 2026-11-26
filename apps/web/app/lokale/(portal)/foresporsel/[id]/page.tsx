@@ -1,4 +1,4 @@
-import { MAX_OFFER_SLOTS } from "@lokalbud/core";
+import { MAX_OFFER_SLOTS, todayInOslo } from "@lokalbud/core";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -19,6 +19,10 @@ export default async function VenueRequestPage({ params }: { params: Promise<{ i
   if (!view) notFound();
   const { request, urgent, slotsLeft, ownOffer, declined } = view;
   const canOffer = !ownOffer && !declined && slotsLeft > 0 && user.role !== "accounting";
+  const today = todayInOslo();
+  const lastValidDate = request.input.date.mode === "exact" ? request.input.date.date : request.input.date.to;
+  const inAWeek = new Date(Date.parse(`${today}T12:00:00Z`) + 7 * 86_400_000).toISOString().slice(0, 10);
+  const defaultValidUntil = inAWeek < lastValidDate ? inAWeek : lastValidDate;
 
   return (
     <>
@@ -35,6 +39,9 @@ export default async function VenueRequestPage({ params }: { params: Promise<{ i
               budgetNok={request.input.budget.amountNok}
               budgetIndicative={request.input.budget.indicative}
               freeIntroUsed={venue.freeIntroOffersUsed}
+              today={today}
+              defaultValidUntil={defaultValidUntil}
+              lastValidDate={lastValidDate}
             />
           )}
         </div>
